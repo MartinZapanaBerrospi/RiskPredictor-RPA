@@ -208,6 +208,7 @@ function App() {
           </ul>
           <p><b>Probabilidad de Sobrecosto:</b> {(result.probabilidad_sobrecosto * 100).toFixed(1)}%</p>
           <p><b>Probabilidad de Retraso:</b> {(result.probabilidad_retraso * 100).toFixed(1)}%</p>
+          <button style={{marginTop: 16}} disabled>Descargar reporte</button>
         </div>
       )}
       {retrainStatus !== 'idle' && (
