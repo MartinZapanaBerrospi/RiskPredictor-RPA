@@ -3,6 +3,7 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, MultiLabelBinarizer
 from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.utils import resample
 import joblib
 
 # Cargar datos
@@ -10,8 +11,7 @@ inputs = [
     'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave'
 ]
-df = pd.read_csv('synthetic_data_with_outputs.csv')
-
+df = pd.read_csv('../data/synthetic_data_with_outputs.csv')
 # Preprocesamiento de variables categóricas
 le_tipo = LabelEncoder()
 df['tipo_proyecto_enc'] = le_tipo.fit_transform(df['tipo_proyecto'])
@@ -36,14 +36,35 @@ features = [
 le_riesgo = LabelEncoder()
 df['riesgo_general_enc'] = le_riesgo.fit_transform(df['riesgo_general'])
 
-X = df[features]
-y = df['riesgo_general_enc']
+# Balanceo del dataset (upsampling de clases minoritarias)
+df_majority = df[df['riesgo_general_enc'] == df['riesgo_general_enc'].value_counts().idxmax()]
+classes = df['riesgo_general_enc'].unique()
+df_list = [df[df['riesgo_general_enc'] == c] for c in classes]
+max_count = max([len(d) for d in df_list])
+df_balanced = pd.concat([
+    resample(d, replace=True, n_samples=max_count, random_state=42) if len(d) < max_count else d
+    for d in df_list
+])
+
+X = df_balanced[features]
+y = df_balanced['riesgo_general_enc']
 
 # Split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Entrenamiento XGBoost
-model = xgb.XGBClassifier(objective='multi:softprob', num_class=3, eval_metric='mlogloss', use_label_encoder=False)
+# Entrenamiento XGBoost con ajuste de hiperparámetros
+model = xgb.XGBClassifier(
+    objective='multi:softprob',
+    num_class=3,
+    eval_metric='mlogloss',
+    use_label_encoder=False,
+    n_estimators=200,
+    max_depth=6,
+    learning_rate=0.1,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    random_state=42
+)
 model.fit(X_train, y_train)
 
 # Evaluación
