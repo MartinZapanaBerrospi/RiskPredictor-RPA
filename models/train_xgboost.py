@@ -11,7 +11,7 @@ inputs = [
     'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave'
 ]
-df = pd.read_csv('../data/synthetic_data_with_outputs.csv')
+df = pd.read_csv('synthetic_data_with_outputs.csv')
 # Preprocesamiento de variables categóricas
 le_tipo = LabelEncoder()
 df['tipo_proyecto_enc'] = le_tipo.fit_transform(df['tipo_proyecto'])
