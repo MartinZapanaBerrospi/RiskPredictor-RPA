@@ -4,6 +4,10 @@ import joblib
 import pandas as pd
 from pydantic import BaseModel
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import os
+import json
 
 app = FastAPI()
 
@@ -29,6 +33,14 @@ class ProyectoInput(BaseModel):
     complejidad: str
     experiencia_equipo: int
     hitos_clave: int
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Puedes restringir a ["http://localhost:5173"] si solo usas Vite
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get('/')
 def read_root():
@@ -64,3 +76,17 @@ def predict_riesgo(proyecto: ProyectoInput):
         "probabilidad_sobrecosto": float(sobrecosto_proba),
         "probabilidad_retraso": float(retraso_proba)
     }
+
+DATA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/opciones_formulario.json'))
+
+@app.get('/opciones-formulario')
+def get_opciones_formulario():
+    with open(DATA_PATH, encoding='utf-8') as f:
+        data = json.load(f)
+    return JSONResponse(content=data)
+
+@app.put('/opciones-formulario')
+def update_opciones_formulario(new_data: dict):
+    with open(DATA_PATH, 'w', encoding='utf-8') as f:
+        json.dump(new_data, f, ensure_ascii=False, indent=2)
+    return {"status": "ok"}
