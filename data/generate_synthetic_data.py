@@ -7,7 +7,6 @@ definir_semilla = 42
 np.random.seed(definir_semilla)
 random.seed(definir_semilla)
 
-# Parámetros para la generación de datos
 N = 200  # Número de proyectos sintéticos
 
 complejidades = ['baja', 'media', 'alta']
@@ -16,67 +15,86 @@ tipos_proyecto = [
     'desarrollo software', 'migración', 'implementación ERP', 'integración sistemas', 'automatización RPA', 'modernización', 'soporte TI'
 ]
 
-# Reglas para correlaciones y generación realista
+# Función para simular valores faltantes
+def simular_faltante(valor, prob=0.05):
+    return valor if np.random.rand() > prob else np.nan
+
+# Generación realista de proyectos TI sintéticos
 def generar_proyecto():
     tipo = random.choice(tipos_proyecto)
     if tipo == 'implementación ERP':
-        duracion = np.random.randint(18, 37)
-        presupuesto = np.random.randint(800000, 2000001)
-        recursos = np.random.randint(10, 31)
+        duracion = int(np.random.normal(28, 4))
+        presupuesto = int(np.random.normal(1200000, 250000))
+        recursos = int(np.random.normal(20, 5))
         complejidad = 'alta'
         tecnologias = random.sample(tecnologias_posibles, k=np.random.randint(2, 5))
     elif tipo == 'migración':
-        duracion = np.random.randint(6, 18)
-        presupuesto = np.random.randint(100000, 600000)
-        recursos = np.random.randint(3, 12)
+        duracion = int(np.random.normal(12, 3))
+        presupuesto = int(np.random.normal(350000, 100000))
+        recursos = int(np.random.normal(7, 2))
         complejidad = random.choice(['baja', 'media'])
         tecnologias = random.sample(tecnologias_posibles, k=1)
     elif tipo == 'automatización RPA':
-        duracion = np.random.randint(6, 18)
-        presupuesto = np.random.randint(150000, 500000)
-        recursos = np.random.randint(3, 10)
+        duracion = int(np.random.normal(10, 3))
+        presupuesto = int(np.random.normal(300000, 80000))
+        recursos = int(np.random.normal(6, 2))
         complejidad = random.choice(['media', 'alta'])
         tecnologias = random.sample(tecnologias_posibles, k=2)
     elif tipo == 'desarrollo software':
-        duracion = np.random.randint(8, 25)
-        presupuesto = np.random.randint(200000, 1000000)
-        recursos = np.random.randint(5, 20)
+        duracion = int(np.random.normal(15, 5))
+        presupuesto = int(np.random.normal(600000, 200000))
+        recursos = int(np.random.normal(12, 4))
         complejidad = random.choice(['media', 'alta'])
         tecnologias = random.sample(tecnologias_posibles, k=np.random.randint(1, 4))
     elif tipo == 'integración sistemas':
-        duracion = np.random.randint(10, 24)
-        presupuesto = np.random.randint(250000, 900000)
-        recursos = np.random.randint(5, 15)
+        duracion = int(np.random.normal(16, 4))
+        presupuesto = int(np.random.normal(500000, 150000))
+        recursos = int(np.random.normal(10, 3))
         complejidad = random.choice(['media', 'alta'])
         tecnologias = random.sample(tecnologias_posibles, k=2)
     elif tipo == 'modernización':
-        duracion = np.random.randint(8, 20)
-        presupuesto = np.random.randint(200000, 700000)
-        recursos = np.random.randint(4, 12)
+        duracion = int(np.random.normal(12, 3))
+        presupuesto = int(np.random.normal(400000, 100000))
+        recursos = int(np.random.normal(8, 2))
         complejidad = random.choice(['media', 'alta'])
         tecnologias = random.sample(tecnologias_posibles, k=2)
     else:  # soporte TI
-        duracion = np.random.randint(6, 13)
-        presupuesto = np.random.randint(100000, 400000)
-        recursos = np.random.randint(3, 8)
+        duracion = int(np.random.normal(9, 2))
+        presupuesto = int(np.random.normal(200000, 50000))
+        recursos = int(np.random.normal(5, 1))
         complejidad = 'baja'
         tecnologias = random.sample(tecnologias_posibles, k=1)
 
-    experiencia = np.random.randint(1, 16)  # 1 a 15 años
-    hitos = np.random.randint(2, 11)  # 2 a 10 hitos
+    # Limitar valores a rangos razonables
+    duracion = max(6, min(duracion, 36))
+    presupuesto = max(100000, min(presupuesto, 2000000))
+    recursos = max(3, min(recursos, 30))
 
-    # Etiquetado de riesgo basado en reglas
-    riesgo = 0  # bajo
-    if complejidad == 'alta' or duracion > 24 or presupuesto > 1000000:
-        riesgo = 2  # alto
-    elif complejidad == 'media' or duracion > 15 or presupuesto > 500000:
-        riesgo = 1  # medio
-    # Ajuste por experiencia del equipo
-    if experiencia < 4 and riesgo < 2:
-        riesgo += 1
-    if experiencia > 10 and riesgo > 0:
-        riesgo -= 1
-    riesgo = min(max(riesgo, 0), 2)
+    experiencia = int(np.random.normal(8, 3))  # años de experiencia promedio
+    experiencia = max(1, min(experiencia, 15))
+    hitos = np.random.randint(2, 11)
+
+    # Variables adicionales
+    satisfaccion_cliente = simular_faltante(round(np.random.normal(7.5, 1.5), 1), prob=0.08)  # escala 1-10
+    cambios_alcance = simular_faltante(np.random.poisson(2), prob=0.05)
+    incidencias_criticas = simular_faltante(np.random.binomial(3, 0.2), prob=0.05)
+    rotacion_equipo = simular_faltante(np.random.binomial(recursos, 0.1), prob=0.05)
+
+    # Etiquetado de riesgo avanzado
+    score = 0
+    score += 1.5 if complejidad == 'alta' else (0.5 if complejidad == 'media' else 0)
+    score += 1 if duracion > 20 else 0
+    score += 1 if presupuesto > 1000000 else 0
+    score += 1 if experiencia < 4 else 0
+    score += 0.5 if cambios_alcance and cambios_alcance > 3 else 0
+    score += 0.5 if incidencias_criticas and incidencias_criticas > 1 else 0
+    score += 0.5 if rotacion_equipo and rotacion_equipo > 2 else 0
+    score -= 1 if satisfaccion_cliente and satisfaccion_cliente > 8 else 0
+    score -= 0.5 if experiencia > 12 else 0
+    # Asignar riesgo
+    if score >= 3: riesgo = 2  # alto
+    elif score >= 1.5: riesgo = 1  # medio
+    else: riesgo = 0  # bajo
 
     return {
         'tipo_proyecto': tipo,
@@ -87,12 +105,15 @@ def generar_proyecto():
         'complejidad': complejidad,
         'experiencia_equipo': experiencia,
         'hitos_clave': hitos,
+        'satisfaccion_cliente': satisfaccion_cliente,
+        'cambios_alcance': cambios_alcance,
+        'incidencias_criticas': incidencias_criticas,
+        'rotacion_equipo': rotacion_equipo,
         'riesgo': riesgo
     }
 
-# Generar el dataset
 proyectos = [generar_proyecto() for _ in range(N)]
 df = pd.DataFrame(proyectos)
 df.to_csv('synthetic_data.csv', index=False)
 
-print('¡Dataset sintético realista generado en synthetic_data.csv!')
+print('¡Dataset sintético robusto generado en synthetic_data.csv!')
