@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import ProyectosEjecucion from './ProyectosEjecucion';
 
 const initialState = {
   tipo_proyecto: '',
@@ -23,6 +24,9 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [opciones, setOpciones] = useState<Opciones>({ tipo_proyecto: [], tecnologias: [] });
+  const [retrainStatus, setRetrainStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [retrainOutput, setRetrainOutput] = useState<string>('');
+  const [view, setView] = useState<'form' | 'proyectos'>('form');
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/opciones-formulario')
@@ -71,6 +75,65 @@ function App() {
       setLoading(false);
     }
   };
+
+  // Nuevo: Guardar proyecto en ejecución
+  const handleGuardarProyecto = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch('http://127.0.0.1:8000/proyectos-ejecucion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          tecnologias: form.tecnologias.join(','),
+          duracion_estimacion: Number(form.duracion_estimacion),
+          presupuesto_estimado: Number(form.presupuesto_estimado),
+          numero_recursos: Number(form.numero_recursos),
+          experiencia_equipo: Number(form.experiencia_equipo),
+          hitos_clave: Number(form.hitos_clave),
+        }),
+      });
+      if (!response.ok) throw new Error('Error al guardar el proyecto');
+      alert('Proyecto guardado en ejecución');
+      setForm(initialState);
+    } catch (err: any) {
+      setError(err.message || 'Error desconocido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reentrenar modelo
+  const handleRetrain = async () => {
+    setRetrainStatus('loading');
+    setRetrainOutput('');
+    try {
+      const response = await fetch('http://127.0.0.1:8000/reentrenar-modelo', {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (data.status === 'ok') {
+        setRetrainStatus('ok');
+        setRetrainOutput(data.output);
+      } else {
+        setRetrainStatus('error');
+        setRetrainOutput(data.output || 'Error desconocido');
+      }
+    } catch (err: any) {
+      setRetrainStatus('error');
+      setRetrainOutput(err.message || 'Error desconocido');
+    }
+  };
+
+  if (view === 'proyectos') {
+    return (
+      <div className="container">
+        <button onClick={() => setView('form')} style={{marginBottom: 20}}>Volver</button>
+        <ProyectosEjecucion />
+      </div>
+    );
+  }
 
   return (
     <div className="container">
@@ -122,7 +185,16 @@ function App() {
           <input name="hitos_clave" type="number" min="1" value={form.hitos_clave} onChange={handleChange} required />
         </label>
         <button type="submit" disabled={loading}>{loading ? 'Prediciendo...' : 'Predecir Riesgo'}</button>
+        <button type="button" onClick={handleGuardarProyecto} disabled={loading} style={{marginLeft: 10}}>
+          Guardar en Ejecución
+        </button>
       </form>
+      <button onClick={() => setView('proyectos')} style={{marginTop: 20, marginRight: 10}}>
+        Ver Proyectos en Ejecución
+      </button>
+      <button onClick={handleRetrain} disabled={retrainStatus === 'loading'} style={{marginTop: 20}}>
+        {retrainStatus === 'loading' ? 'Reentrenando...' : 'Reentrenar Modelo'}
+      </button>
       {error && <div className="error">{error}</div>}
       {result && (
         <div className="result">
@@ -136,6 +208,12 @@ function App() {
           </ul>
           <p><b>Probabilidad de Sobrecosto:</b> {(result.probabilidad_sobrecosto * 100).toFixed(1)}%</p>
           <p><b>Probabilidad de Retraso:</b> {(result.probabilidad_retraso * 100).toFixed(1)}%</p>
+        </div>
+      )}
+      {retrainStatus !== 'idle' && (
+        <div className="retrain-status" style={{marginTop: 10}}>
+          <b>Estado de reentrenamiento:</b> {retrainStatus === 'ok' ? '¡Completado!' : retrainStatus === 'loading' ? 'En progreso...' : 'Error'}
+          <pre style={{background: '#f4f4f4', padding: 10, maxHeight: 200, overflow: 'auto'}}>{retrainOutput}</pre>
         </div>
       )}
     </div>
