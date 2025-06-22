@@ -11,6 +11,7 @@ import json
 import uuid
 import csv
 import subprocess
+import sys
 
 app = FastAPI()
 
@@ -199,8 +200,10 @@ def reentrenar_modelo(background_tasks: BackgroundTasks):
     Ejecuta el script de entrenamiento de modelos y devuelve el estado y la salida.
     """
     script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models/train_xgboost.py'))
+    python_exe = sys.executable  # Usar el mismo Python del backend
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     try:
-        result = subprocess.run(['python', script_path], capture_output=True, text=True, check=True)
+        result = subprocess.run([python_exe, script_path], capture_output=True, text=True, check=True, cwd=project_root)
         # Recargar modelos y encoders
         global model, sobrecosto_model, retraso_model, le_tipo, le_complejidad, le_experiencia, mlb, le_riesgo
         model = joblib.load('models/modelo_xgb_riesgo_general.pkl')
