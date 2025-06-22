@@ -111,6 +111,33 @@ conditions = [
 choices = ['Alto', 'Medio']
 df['riesgo_general'] = np.select(conditions, choices, default='Bajo')
 
+# Reglas adicionales para riesgo más realista
+# 1. Experiencia baja y complejidad alta => más riesgo
+exp_baja_alta = (df['experiencia_equipo'] < 5) & (df['complejidad'] == 'alta')
+# 2. Muchas tecnologías => más riesgo
+muchas_tecnos = df['tecnologias'].apply(lambda x: len(x.split(',')) >= 3)
+# 3. Tipo de proyecto riesgoso
+proy_riesgoso = df['tipo_proyecto'].isin(['implementación ERP', 'integración sistemas'])
+# 4. Presupuesto por recurso bajo
+presup_x_recurso_bajo = (df['presupuesto_estimado'] / df['numero_recursos']) < 40000
+# 5. Duración corta y complejidad alta
+corta_alta = (df['duracion_estimacion'] < 12) & (df['complejidad'] == 'alta')
+
+# Sumar puntos de riesgo
+df['puntos_riesgo'] = (
+    exp_baja_alta.astype(int) +
+    muchas_tecnos.astype(int) +
+    proy_riesgoso.astype(int) +
+    presup_x_recurso_bajo.astype(int) +
+    corta_alta.astype(int)
+)
+
+# Ajustar probabilidad de riesgo
+# Si puntos_riesgo >=3, aumentar probabilidad de riesgo alto
+cond_alto = (df['puntos_riesgo'] >= 3) | ((df['riesgo_costo_prob'] > 0.7) & (df['riesgo_tiempo_prob'] > 0.7))
+cond_medio = (df['puntos_riesgo'] == 2) | ((df['riesgo_costo_prob'] > 0.7) | (df['riesgo_tiempo_prob'] > 0.7))
+df['riesgo_general'] = np.select([cond_alto, cond_medio], ['Alto', 'Medio'], default='Bajo')
+
 # Guardar solo los inputs y riesgo_general en synthetic_data_with_outputs.csv
 cols = [
     'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
