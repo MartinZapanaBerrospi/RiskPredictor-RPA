@@ -15,11 +15,7 @@ tipos_proyecto = [
     'desarrollo software', 'migración', 'implementación ERP', 'integración sistemas', 'automatización RPA', 'modernización', 'soporte TI'
 ]
 
-# Función para simular valores faltantes
-def simular_faltante(valor, prob=0.05):
-    return valor if np.random.rand() > prob else np.nan
-
-# Generación realista de proyectos TI sintéticos
+# Generación realista de proyectos TI sintéticos SOLO CON INPUTS DISPONIBLES ANTES DEL PROYECTO
 def generar_proyecto():
     tipo = random.choice(tipos_proyecto)
     if tipo == 'implementación ERP':
@@ -74,28 +70,6 @@ def generar_proyecto():
     experiencia = max(1, min(experiencia, 15))
     hitos = np.random.randint(2, 11)
 
-    # Variables adicionales
-    satisfaccion_cliente = simular_faltante(round(np.random.normal(7.5, 1.5), 1), prob=0.08)  # escala 1-10
-    cambios_alcance = simular_faltante(np.random.poisson(2), prob=0.05)
-    incidencias_criticas = simular_faltante(np.random.binomial(3, 0.2), prob=0.05)
-    rotacion_equipo = simular_faltante(np.random.binomial(recursos, 0.1), prob=0.05)
-
-    # Etiquetado de riesgo avanzado
-    score = 0
-    score += 1.5 if complejidad == 'alta' else (0.5 if complejidad == 'media' else 0)
-    score += 1 if duracion > 20 else 0
-    score += 1 if presupuesto > 1000000 else 0
-    score += 1 if experiencia < 4 else 0
-    score += 0.5 if cambios_alcance and cambios_alcance > 3 else 0
-    score += 0.5 if incidencias_criticas and incidencias_criticas > 1 else 0
-    score += 0.5 if rotacion_equipo and rotacion_equipo > 2 else 0
-    score -= 1 if satisfaccion_cliente and satisfaccion_cliente > 8 else 0
-    score -= 0.5 if experiencia > 12 else 0
-    # Asignar riesgo
-    if score >= 3: riesgo = 2  # alto
-    elif score >= 1.5: riesgo = 1  # medio
-    else: riesgo = 0  # bajo
-
     return {
         'tipo_proyecto': tipo,
         'duracion_estimacion': duracion,
@@ -104,16 +78,11 @@ def generar_proyecto():
         'tecnologias': ','.join(tecnologias),
         'complejidad': complejidad,
         'experiencia_equipo': experiencia,
-        'hitos_clave': hitos,
-        'satisfaccion_cliente': satisfaccion_cliente,
-        'cambios_alcance': cambios_alcance,
-        'incidencias_criticas': incidencias_criticas,
-        'rotacion_equipo': rotacion_equipo,
-        'riesgo': riesgo
+        'hitos_clave': hitos
     }
 
 proyectos = [generar_proyecto() for _ in range(N)]
 df = pd.DataFrame(proyectos)
 df.to_csv('synthetic_data.csv', index=False)
 
-print('¡Dataset sintético robusto generado en synthetic_data.csv!')
+print('¡Dataset sintético solo con inputs generado en synthetic_data.csv!')
