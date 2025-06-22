@@ -1,6 +1,6 @@
 import pandas as pd
 import xgboost as xgb
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import LabelEncoder, MultiLabelBinarizer
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.utils import resample
@@ -52,20 +52,29 @@ y = df_balanced['riesgo_general_enc']
 # Split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Entrenamiento XGBoost con ajuste de hiperparámetros
-model = xgb.XGBClassifier(
+# Ajuste de hiperparámetros con GridSearchCV
+param_grid = {
+    'n_estimators': [100, 200],
+    'max_depth': [4, 6, 8],
+    'learning_rate': [0.05, 0.1, 0.2],
+    'subsample': [0.8, 1.0],
+    'colsample_bytree': [0.8, 1.0]
+}
+
+xgb_base = xgb.XGBClassifier(
     objective='multi:softprob',
     num_class=3,
     eval_metric='mlogloss',
     use_label_encoder=False,
-    n_estimators=200,
-    max_depth=6,
-    learning_rate=0.1,
-    subsample=0.8,
-    colsample_bytree=0.8,
     random_state=42
 )
-model.fit(X_train, y_train)
+grid_search = GridSearchCV(xgb_base, param_grid, cv=3, scoring='f1_weighted', n_jobs=-1, verbose=2)
+grid_search.fit(X_train, y_train)
+
+print('Mejores hiperparámetros encontrados:')
+print(grid_search.best_params_)
+
+model = grid_search.best_estimator_
 
 # Evaluación
 y_pred = model.predict(X_test)
@@ -73,6 +82,12 @@ print('Reporte de clasificación:')
 print(classification_report(y_test, y_pred, target_names=le_riesgo.classes_))
 print('Matriz de confusión:')
 print(confusion_matrix(y_test, y_pred))
+
+# Mostrar distribución de clases en el dataset y en el test
+print('Distribución de clases en todo el dataset:')
+print(df['riesgo_general'].value_counts())
+print('Distribución de clases en el conjunto de prueba:')
+print(y_test.value_counts())
 
 # Guardar modelo y encoders
 joblib.dump(model, 'modelo_xgb_riesgo_general.pkl')
