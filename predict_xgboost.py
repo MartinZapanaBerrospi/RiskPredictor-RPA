@@ -10,6 +10,10 @@ le_experiencia = joblib.load('le_experiencia.pkl')
 mlb = joblib.load('mlb_tecnologias.pkl')
 le_riesgo = joblib.load('le_riesgo_general.pkl')
 
+# Cargar modelos adicionales
+sobrecosto_model = joblib.load('models/modelo_xgb_sobrecosto.pkl')
+retraso_model = joblib.load('models/modelo_xgb_retraso.pkl')
+
 # Ejemplo de input del usuario
 input_dict = {
     'tipo_proyecto': 'desarrollo software',
@@ -48,12 +52,18 @@ for col in features:
         X_pred[col] = 0
 X_pred = X_pred[features]
 
-# Predicción
+# Predicción riesgo general
 pred = model.predict(X_pred)[0]
 pred_label = le_riesgo.inverse_transform([pred])[0]
 pred_proba = model.predict_proba(X_pred)[0]
+
+# Predicción sobrecosto y retraso (probabilidad)
+sobrecosto_proba = sobrecosto_model.predict_proba(X_pred)[0][1]
+retraso_proba = retraso_model.predict_proba(X_pred)[0][1]
 
 print(f"Predicción de riesgo general: {pred_label}")
 print("Probabilidades por clase:")
 for clase, proba in zip(le_riesgo.classes_, pred_proba):
     print(f"  {clase}: {proba:.2f}")
+print(f"\nProbabilidad de sobrecosto: {sobrecosto_proba:.2f}")
+print(f"Probabilidad de retraso: {retraso_proba:.2f}")

@@ -2,7 +2,7 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import LabelEncoder, MultiLabelBinarizer
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, log_loss
 from sklearn.utils import resample
 import joblib
 
@@ -11,8 +11,7 @@ inputs = [
     'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave'
 ]
-df = pd.read_csv('synthetic_data_with_outputs.csv')
-# Preprocesamiento de variables categóricas
+df = pd.read_csv('../data/synthetic_data_with_outputs.csv')# Preprocesamiento de variables categóricas
 le_tipo = LabelEncoder()
 df['tipo_proyecto_enc'] = le_tipo.fit_transform(df['tipo_proyecto'])
 le_complejidad = LabelEncoder()
@@ -35,6 +34,10 @@ features = [
 # Target
 le_riesgo = LabelEncoder()
 df['riesgo_general_enc'] = le_riesgo.fit_transform(df['riesgo_general'])
+
+# Crear columnas sobrecosto y retraso antes del balanceo
+df['sobrecosto'] = (df['costo_real'] > df['presupuesto_estimado']).astype(int)
+df['retraso'] = (df['duracion_real'] > df['duracion_estimacion']).astype(int)
 
 # Balanceo del dataset (upsampling de clases minoritarias)
 df_majority = df[df['riesgo_general_enc'] == df['riesgo_general_enc'].value_counts().idxmax()]
@@ -98,3 +101,61 @@ joblib.dump(mlb, 'mlb_tecnologias.pkl')
 joblib.dump(le_riesgo, 'le_riesgo_general.pkl')
 
 print('Modelo XGBoost entrenado y guardado.')
+
+# --- Entrenamiento para sobrecosto (binario) ---
+df['sobrecosto'] = (df['costo_real'] > df['presupuesto_estimado']).astype(int)
+X_sobrecosto = df_balanced[features]
+y_sobrecosto = df_balanced['sobrecosto']
+
+X_train_s, X_test_s, y_train_s, y_test_s = train_test_split(X_sobrecosto, y_sobrecosto, test_size=0.2, random_state=42)
+
+sobrecosto_model = xgb.XGBClassifier(
+    objective='binary:logistic',
+    eval_metric='logloss',
+    use_label_encoder=False,
+    random_state=42
+)
+sobrecosto_model.fit(X_train_s, y_train_s)
+
+# Probabilidad de sobrecosto
+sobrecosto_probs = sobrecosto_model.predict_proba(X_test_s)[:,1]
+print('\nProbabilidad de sobrecosto (primeros 10 casos):')
+print(sobrecosto_probs[:10])
+
+# Evaluación de probabilidades para sobrecosto
+print('\nEvaluación modelo de sobrecosto:')
+print('ROC AUC:', roc_auc_score(y_test_s, sobrecosto_probs))
+print('Log-loss:', log_loss(y_test_s, sobrecosto_probs))
+print(classification_report(y_test_s, (sobrecosto_probs > 0.5).astype(int)))
+
+# --- Entrenamiento para retraso (binario) ---
+df['retraso'] = (df['duracion_real'] > df['duracion_estimacion']).astype(int)
+X_retraso = df_balanced[features]
+y_retraso = df_balanced['retraso']
+
+X_train_r, X_test_r, y_train_r, y_test_r = train_test_split(X_retraso, y_retraso, test_size=0.2, random_state=42)
+
+retraso_model = xgb.XGBClassifier(
+    objective='binary:logistic',
+    eval_metric='logloss',
+    use_label_encoder=False,
+    random_state=42
+)
+retraso_model.fit(X_train_r, y_train_r)
+
+# Probabilidad de retraso
+retraso_probs = retraso_model.predict_proba(X_test_r)[:,1]
+print('\nProbabilidad de retraso (primeros 10 casos):')
+print(retraso_probs[:10])
+
+# Evaluación de probabilidades para retraso
+print('\nEvaluación modelo de retraso:')
+print('ROC AUC:', roc_auc_score(y_test_r, retraso_probs))
+print('Log-loss:', log_loss(y_test_r, retraso_probs))
+print(classification_report(y_test_r, (retraso_probs > 0.5).astype(int)))
+
+# Guardar modelos
+joblib.dump(sobrecosto_model, 'modelo_xgb_sobrecosto.pkl')
+joblib.dump(retraso_model, 'modelo_xgb_retraso.pkl')
+
+print('Modelos para sobrecosto y retraso entrenados y guardados.')
