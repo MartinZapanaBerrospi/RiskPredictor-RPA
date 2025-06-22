@@ -7,7 +7,7 @@ definir_semilla = 42
 np.random.seed(definir_semilla)
 random.seed(definir_semilla)
 
-N = 200  # Número de proyectos sintéticos
+N = 20000  # Número de proyectos sintéticos
 
 complejidades = ['baja', 'media', 'alta']
 tecnologias_posibles = ['cloud', 'big data', 'IA', 'IoT', 'blockchain', 'mobile', 'web']
@@ -70,6 +70,15 @@ def generar_proyecto():
     experiencia = max(1, min(experiencia, 15))
     hitos = np.random.randint(2, 11)
 
+    # Generar costo y duración real con cierta probabilidad de desviación
+    # Proyectos más complejos y con menos experiencia tienden a desviarse más
+    desviacion_costo = np.random.normal(1.0, 0.08 + (0.05 if complejidad == 'alta' else 0) + (0.05 if experiencia < 5 else 0))
+    desviacion_tiempo = np.random.normal(1.0, 0.08 + (0.05 if complejidad == 'alta' else 0) + (0.05 if experiencia < 5 else 0))
+    costo_real = int(presupuesto * desviacion_costo)
+    duracion_real = int(duracion * desviacion_tiempo)
+    costo_real = max(100000, costo_real)
+    duracion_real = max(6, duracion_real)
+
     return {
         'tipo_proyecto': tipo,
         'duracion_estimacion': duracion,
@@ -78,11 +87,44 @@ def generar_proyecto():
         'tecnologias': ','.join(tecnologias),
         'complejidad': complejidad,
         'experiencia_equipo': experiencia,
-        'hitos_clave': hitos
+        'hitos_clave': hitos,
+        'costo_real': costo_real,
+        'duracion_real': duracion_real
     }
 
 proyectos = [generar_proyecto() for _ in range(N)]
 df = pd.DataFrame(proyectos)
-df.to_csv('synthetic_data.csv', index=False)
 
-print('¡Dataset sintético solo con inputs generado en synthetic_data.csv!')
+# Calcular sobrecosto y retraso
+df['sobrecosto'] = (df['costo_real'] > df['presupuesto_estimado']).astype(int)
+df['retraso'] = (df['duracion_real'] > df['duracion_estimacion']).astype(int)
+
+# Probabilidad sintética de sobrecosto y retraso
+df['riesgo_costo_prob'] = df['sobrecosto'] * np.random.uniform(0.6, 1.0, size=len(df)) + (1 - df['sobrecosto']) * np.random.uniform(0.0, 0.4, size=len(df))
+df['riesgo_tiempo_prob'] = df['retraso'] * np.random.uniform(0.6, 1.0, size=len(df)) + (1 - df['retraso']) * np.random.uniform(0.0, 0.4, size=len(df))
+
+# Riesgo general basado en reglas
+conditions = [
+    (df['riesgo_costo_prob'] > 0.7) & (df['riesgo_tiempo_prob'] > 0.7),
+    (df['riesgo_costo_prob'] > 0.7) | (df['riesgo_tiempo_prob'] > 0.7)
+]
+choices = ['Alto', 'Medio']
+df['riesgo_general'] = np.select(conditions, choices, default='Bajo')
+
+# Guardar solo los inputs y riesgo_general en synthetic_data_with_outputs.csv
+cols = [
+    'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+    'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
+    'costo_real', 'duracion_real', 'riesgo_general'
+]
+df[cols].to_csv('synthetic_data_with_outputs.csv', index=False)
+
+# Guardar solo los inputs en synthetic_data.csv
+inputs_cols = [
+    'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+    'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
+    'costo_real', 'duracion_real'
+]
+df[inputs_cols].to_csv('synthetic_data.csv', index=False)
+
+print('¡Inputs guardados en synthetic_data.csv y riesgo_general en synthetic_data_with_outputs.csv!')
