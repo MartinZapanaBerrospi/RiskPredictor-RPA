@@ -16,5 +16,11 @@
     "blockchain",
     "mobile",
     "web"
+  ],
+  "metodologia": [
+    "scrum",
+    "kanban",
+    "agile",
+    "cascada"
   ]
 }

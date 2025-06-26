@@ -4,6 +4,7 @@ import ProyectosEjecucion from './ProyectosEjecucion';
 
 const initialState = {
   tipo_proyecto: '',
+  metodologia: '',
   duracion_estimacion: '',
   presupuesto_estimado: '',
   numero_recursos: '',
@@ -16,6 +17,7 @@ const initialState = {
 type Opciones = {
   tipo_proyecto: string[];
   tecnologias: string[];
+  metodologia?: string[];
 };
 
 function App() {
@@ -23,7 +25,7 @@ function App() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [opciones, setOpciones] = useState<Opciones>({ tipo_proyecto: [], tecnologias: [] });
+  const [opciones, setOpciones] = useState<Opciones>({ tipo_proyecto: [], tecnologias: [], metodologia: [] });
   const [retrainStatus, setRetrainStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [retrainOutput, setRetrainOutput] = useState<string>('');
   const [view, setView] = useState<'form' | 'proyectos'>('form');
@@ -143,6 +145,14 @@ function App() {
           <select name="tipo_proyecto" value={form.tipo_proyecto} onChange={handleChange} required>
             <option value="">Seleccione...</option>
             {opciones.tipo_proyecto.map((op) => (
+              <option key={op} value={op}>{op}</option>
+            ))}
+          </select>
+        </label>
+        <label>Metodología:
+          <select name="metodologia" value={form.metodologia} onChange={handleChange} required>
+            <option value="">Seleccione...</option>
+            {opciones.metodologia && opciones.metodologia.map((op) => (
               <option key={op} value={op}>{op}</option>
             ))}
           </select>

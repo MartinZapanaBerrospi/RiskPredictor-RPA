@@ -18,6 +18,14 @@ tipos_proyecto = [
 # Generación realista de proyectos TI sintéticos SOLO CON INPUTS DISPONIBLES ANTES DEL PROYECTO
 def generar_proyecto():
     tipo = random.choice(tipos_proyecto)
+    # Asignar metodología según tipo de proyecto
+    if tipo in ['implementación ERP', 'integración sistemas']:
+        metodologia = random.choices(['cascada', 'agile'], weights=[0.7, 0.3])[0]
+    elif tipo in ['automatización RPA', 'desarrollo software', 'modernización']:
+        metodologia = random.choices(['scrum', 'kanban', 'agile'], weights=[0.6, 0.2, 0.2])[0]
+    else:  # soporte TI, migración
+        metodologia = random.choices(['kanban', 'cascada', 'agile'], weights=[0.5, 0.3, 0.2])[0]
+
     if tipo == 'implementación ERP':
         duracion = int(np.random.normal(28, 4))
         presupuesto = int(np.random.normal(1200000, 250000))
@@ -81,6 +89,7 @@ def generar_proyecto():
 
     return {
         'tipo_proyecto': tipo,
+        'metodologia': metodologia,
         'duracion_estimacion': duracion,
         'presupuesto_estimado': presupuesto,
         'numero_recursos': recursos,
@@ -140,7 +149,7 @@ df['riesgo_general'] = np.select([cond_alto, cond_medio], ['Alto', 'Medio'], def
 
 # Guardar solo los inputs y riesgo_general en synthetic_data_with_outputs.csv
 cols = [
-    'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+    'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
     'costo_real', 'duracion_real', 'riesgo_general'
 ]
@@ -148,7 +157,7 @@ df[cols].to_csv('synthetic_data_with_outputs.csv', index=False)
 
 # Guardar solo los inputs en synthetic_data.csv
 inputs_cols = [
-    'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+    'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
     'costo_real', 'duracion_real'
 ]

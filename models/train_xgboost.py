@@ -5,15 +5,25 @@ from sklearn.preprocessing import LabelEncoder, MultiLabelBinarizer
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, log_loss
 from sklearn.utils import resample
 import joblib
+import os
+
+# Definir ruta absoluta para guardar modelos en la carpeta 'models'
+MODELS_DIR = os.path.join(os.path.dirname(__file__))
+
+def model_path(filename):
+    return os.path.join(MODELS_DIR, filename)
 
 # Cargar datos
 inputs = [
-    'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+    'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave'
 ]
 df = pd.read_csv('data/synthetic_data_with_outputs.csv')
 le_tipo = LabelEncoder()
 df['tipo_proyecto_enc'] = le_tipo.fit_transform(df['tipo_proyecto'])
+# Codificar metodologia
+le_metodologia = LabelEncoder()
+df['metodologia_enc'] = le_metodologia.fit_transform(df['metodologia'])
 le_complejidad = LabelEncoder()
 df['complejidad_enc'] = le_complejidad.fit_transform(df['complejidad'])
 le_experiencia = LabelEncoder()
@@ -27,7 +37,7 @@ df = pd.concat([df, tec_df], axis=1)
 
 # Features finales
 features = [
-    'tipo_proyecto_enc', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+    'tipo_proyecto_enc', 'metodologia_enc', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'complejidad_enc', 'experiencia_equipo_enc', 'hitos_clave'
 ] + list(tec_df.columns)
 
@@ -93,12 +103,13 @@ print('Distribución de clases en el conjunto de prueba:')
 print(y_test.value_counts())
 
 # Guardar modelo y encoders
-joblib.dump(model, 'modelo_xgb_riesgo_general.pkl')
-joblib.dump(le_tipo, 'le_tipo_proyecto.pkl')
-joblib.dump(le_complejidad, 'le_complejidad.pkl')
-joblib.dump(le_experiencia, 'le_experiencia.pkl')
-joblib.dump(mlb, 'mlb_tecnologias.pkl')
-joblib.dump(le_riesgo, 'le_riesgo_general.pkl')
+joblib.dump(model, model_path('modelo_xgb_riesgo_general.pkl'))
+joblib.dump(le_tipo, model_path('le_tipo_proyecto.pkl'))
+joblib.dump(le_metodologia, model_path('le_metodologia.pkl'))
+joblib.dump(le_complejidad, model_path('le_complejidad.pkl'))
+joblib.dump(le_experiencia, model_path('le_experiencia.pkl'))
+joblib.dump(mlb, model_path('mlb_tecnologias.pkl'))
+joblib.dump(le_riesgo, model_path('le_riesgo_general.pkl'))
 
 print('Modelo XGBoost entrenado y guardado.')
 
@@ -155,7 +166,7 @@ print('Log-loss:', log_loss(y_test_r, retraso_probs))
 print(classification_report(y_test_r, (retraso_probs > 0.5).astype(int)))
 
 # Guardar modelos
-joblib.dump(sobrecosto_model, 'modelo_xgb_sobrecosto.pkl')
-joblib.dump(retraso_model, 'modelo_xgb_retraso.pkl')
+joblib.dump(sobrecosto_model, model_path('modelo_xgb_sobrecosto.pkl'))
+joblib.dump(retraso_model, model_path('modelo_xgb_retraso.pkl'))
 
 print('Modelos para sobrecosto y retraso entrenados y guardados.')

@@ -23,6 +23,7 @@ model = joblib.load('models/modelo_xgb_riesgo_general.pkl')
 sobrecosto_model = joblib.load('models/modelo_xgb_sobrecosto.pkl')
 retraso_model = joblib.load('models/modelo_xgb_retraso.pkl')
 le_tipo = joblib.load('models/le_tipo_proyecto.pkl')
+le_metodologia = joblib.load('models/le_metodologia.pkl')
 le_complejidad = joblib.load('models/le_complejidad.pkl')
 le_experiencia = joblib.load('models/le_experiencia.pkl')
 mlb = joblib.load('models/mlb_tecnologias.pkl')
@@ -30,6 +31,7 @@ le_riesgo = joblib.load('models/le_riesgo_general.pkl')
 
 class ProyectoInput(BaseModel):
     tipo_proyecto: str
+    metodologia: str
     duracion_estimacion: int
     presupuesto_estimado: int
     numero_recursos: int
@@ -54,6 +56,7 @@ def read_root():
 def predict_riesgo(proyecto: ProyectoInput):
     X_pred = pd.DataFrame([proyecto.dict()])
     X_pred['tipo_proyecto_enc'] = le_tipo.transform(X_pred['tipo_proyecto'])
+    X_pred['metodologia_enc'] = le_metodologia.transform(X_pred['metodologia'])
     X_pred['complejidad_enc'] = le_complejidad.transform(X_pred['complejidad'])
     X_pred['experiencia_equipo_enc'] = X_pred['experiencia_equipo']
     tec_matrix = mlb.transform([X_pred.loc[0, 'tecnologias'].split(',')])
@@ -61,7 +64,7 @@ def predict_riesgo(proyecto: ProyectoInput):
     for col in tec_df.columns:
         X_pred[col] = tec_df[col].values
     features = [
-        'tipo_proyecto_enc', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+        'tipo_proyecto_enc', 'metodologia_enc', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
         'complejidad_enc', 'experiencia_equipo_enc', 'hitos_clave'
     ] + list(tec_df.columns)
     for col in features:
@@ -99,7 +102,7 @@ PROY_EJEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../dat
 
 # Helper: get fieldnames for proyectos en ejecución
 PROY_EJEC_FIELDS = [
-    'id', 'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+    'id', 'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave'
 ]
 
@@ -182,7 +185,7 @@ def finalizar_proyecto(proy_id: str, datos_finales: dict):
         writer.writerows(proyectos)
     # Agregar a synthetic_data_with_outputs.csv
     synth_fields = [
-        'tipo_proyecto', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+        'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
         'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
         'costo_real', 'duracion_real', 'riesgo_general'
     ]
@@ -205,11 +208,12 @@ def reentrenar_modelo(background_tasks: BackgroundTasks):
     try:
         result = subprocess.run([python_exe, script_path], capture_output=True, text=True, check=True, cwd=project_root)
         # Recargar modelos y encoders
-        global model, sobrecosto_model, retraso_model, le_tipo, le_complejidad, le_experiencia, mlb, le_riesgo
+        global model, sobrecosto_model, retraso_model, le_tipo, le_metodologia, le_complejidad, le_experiencia, mlb, le_riesgo
         model = joblib.load('models/modelo_xgb_riesgo_general.pkl')
         sobrecosto_model = joblib.load('models/modelo_xgb_sobrecosto.pkl')
         retraso_model = joblib.load('models/modelo_xgb_retraso.pkl')
         le_tipo = joblib.load('models/le_tipo_proyecto.pkl')
+        le_metodologia = joblib.load('models/le_metodologia.pkl')
         le_complejidad = joblib.load('models/le_complejidad.pkl')
         le_experiencia = joblib.load('models/le_experiencia.pkl')
         mlb = joblib.load('models/mlb_tecnologias.pkl')
