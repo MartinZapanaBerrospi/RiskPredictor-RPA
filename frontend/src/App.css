@@ -8,7 +8,7 @@
   --color-primary-dark: #4db3fa;
   --color-accent: #0074d9;
   --color-error: #b00020;
-  --color-success: #007a3d;
+  --color-success: #005fa3;
   --color-label-light: #003366;
   --color-label-dark: #b3c7e6;
   --color-text-light: #222;
@@ -530,6 +530,77 @@ button:hover {
   filter: drop-shadow(0 1px 2px #4db3fa44);
 }
 
+/* MODALES: todos los modales .modal-editar-proyecto son cuadros flotantes centrados, con fondo card y sombra */
+.modal-editar-proyecto-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(24,28,36,0.32);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 5vh;
+  padding-bottom: 5vh;
+  box-sizing: border-box;
+  animation: fadeInModal 0.25s;
+}
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-editar-proyecto {
+  border-radius: 18px;
+  box-shadow: 0 8px 40px #00336633, 0 2px 12px #005fa322;
+  margin: 0;
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  animation: slideDownModal 0.3s cubic-bezier(.4,1.4,.6,1);
+}
+@keyframes slideDownModal {
+  from { transform: translateY(-40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.modal-editar-proyecto.finalizar-proyecto {
+  background: var(--color-card-light, #fff) !important;
+  color: var(--color-text-light, #222) !important;
+  border-radius: 18px;
+  box-shadow: 0 8px 40px #00336633, 0 2px 12px #005fa322;
+  max-width: 350px;
+  min-width: 0;
+  padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+}
+
+/* BOTÓN VOLVER profesional y flotante */
+.btn-volver {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2.2em;
+  margin-bottom: 0.5em;
+}
+.btn-volver button {
+  background: linear-gradient(90deg, #005fa3 0%, #4db3fa 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.08em;
+  border: none;
+  border-radius: 9px;
+  padding: 0.7em 1.5em;
+  box-shadow: 0 2px 8px #0033661a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+.btn-volver button:hover {
+  background: linear-gradient(90deg, #4db3fa 0%, #005fa3 100%);
+  transform: scale(1.04);
+}
 @media (max-width: 700px) {
   .container {
     max-width: 99vw;
@@ -713,7 +784,7 @@ td input:focus, td select:focus {
   font-size: 1.18em;
   margin: 0 0.08em;
   cursor: pointer;
-  transition: background 0.18s, box-shadow 0.18s, transform 0.09s;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.12s;
   box-shadow: none;
   display: inline-flex;
   align-items: center;
@@ -771,202 +842,119 @@ td input:focus, td select:focus {
   background: #b0b8c1;
   color: #fff;
 }
-.crud-btn:focus {
-  box-shadow: 0 0 0 2px var(--color-primary-dark, #4db3fa);
-  outline: none;
-  background: rgba(0,95,163,0.13);
-}
-
-/* Animación de spinner para botón finalizar */
-.spinner {
-  border: 2.5px solid #eaf3fb;
-  border-top: 2.5px solid #007a3d;
-  border-radius: 50%;
-  width: 1.2em;
-  height: 1.2em;
-  animation: spin 0.7s linear infinite;
-  display: inline-block;
-  vertical-align: middle;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Botón volver dentro del contenedor */
-.btn-volver {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-top: 2.2rem;
-  width: 100%;
-  background: none;
-  border: none;
-}
-.btn-volver button {
-  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%);
+.crud-btn[title="Finalizar"]:hover, .crud-btn[title="Finalizar"]:focus {
+  background: linear-gradient(90deg, #4db3fa 0%, #005fa3 100%);
   color: #fff;
-  border: none;
-  border-radius: 24px;
-  padding: 0.6em 1.2em;
-  font-size: 1.05em;
-  font-weight: 700;
-  box-shadow: 0 2px 8px #0033661a;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.6em;
-  min-width: 0;
-  width: auto;
-  max-width: 180px;
-  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
 }
-.btn-volver button .theme-icon {
-  margin-left: 0.5em;
-  display: flex;
-  align-items: center;
-  font-size: 1.2em;
+.crud-btn[title="Finalizar"] svg {
+  /* Asegura que el resto del icono no tenga color de fondo por defecto */
+  background: none;
 }
-[data-theme="dark"] .btn-volver button {
-  background: linear-gradient(90deg, #232a36 0%, #4db3fa 100%);
-  color: #eaf3fb;
+.crud-btn[title="Finalizar"] svg circle {
+  stroke: #005fa3;
 }
-.btn-volver button:hover {
-  background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-primary) 100%);
-  transform: scale(1.04);
+.crud-btn[title="Finalizar"]:hover svg circle,
+.crud-btn[title="Finalizar"]:focus svg circle {
+  fill: #4db3fa !important;
+  stroke: #fff;
+}
+.crud-btn[title="Finalizar"] svg circle:nth-child(2),
+.crud-btn[title="Finalizar"] svg circle:nth-child(3) {
+  fill: none !important;
+  stroke: #005fa3;
+}
+.crud-btn[title="Finalizar"]:hover svg circle:nth-child(2),
+.crud-btn[title="Finalizar"]:focus svg circle:nth-child(2),
+.crud-btn[title="Finalizar"]:hover svg circle:nth-child(3),
+.crud-btn[title="Finalizar"]:focus svg circle:nth-child(3) {
+  stroke: #fff;
 }
 
-/* --- MODAL DE EDICIÓN DE PROYECTO --- */
-.modal-editar-proyecto-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(24,28,36,0.32);
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-top: 5vh;
-  padding-bottom: 5vh;
-  box-sizing: border-box;
-  animation: fadeInModal 0.25s;
+/* Gradientes y fondos */
+.crud-btn[title="Finalizar"]:hover, .crud-btn[title="Finalizar"]:focus {
+  background: linear-gradient(90deg, #4db3fa 0%, #005fa3 100%);
+  color: #fff;
 }
-@keyframes fadeInModal {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.modal-editar-proyecto {
-  background: var(--color-card-light, #fff);
-  color: var(--color-text-light, #222);
+
+/* Solo aplica el fondo azul corporativo al modal de finalizar, no a todos los modales de edición */
+.modal-editar-proyecto.finalizar-proyecto {
+  background: var(--color-card-light, #fff) !important;
+  color: var(--color-text-light, #222) !important;
   border-radius: 18px;
   box-shadow: 0 8px 40px #00336633, 0 2px 12px #005fa322;
-  padding: 2.2rem 2.5rem 1.5rem 2.5rem;
-  margin-top: 3.5vh;
-  margin-bottom: 3.5vh;
-  margin: 0;
-  max-height: 90vh;
-  overflow-y: auto;
-  width: 100%;
+  max-width: 350px;
+  min-width: 0;
+  padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+}
+[data-theme="dark"] .modal-editar-proyecto.finalizar-proyecto {
+  background: var(--color-card-dark, #232a36) !important;
+  color: var(--color-text-dark, #eaf3fb) !important;
+}
+.modal-editar-proyecto:not(.finalizar-proyecto) {
+  background: var(--color-card-light, #fff) !important;
+  color: var(--color-text-light, #222) !important;
+  border-radius: 18px;
+  box-shadow: 0 8px 40px #00336633, 0 2px 12px #005fa322;
   max-width: 420px;
+  min-width: 0;
+  padding: 2.2rem 2.5rem 1.5rem 2.5rem;
+  margin: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  animation: slideDownModal 0.3s cubic-bezier(.4,1.4,.6,1);
 }
-@keyframes slideDownModal {
-  from { transform: translateY(-40px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+[data-theme="dark"] .modal-editar-proyecto:not(.finalizar-proyecto) {
+  background: var(--color-card-dark, #232a36) !important;
+  color: var(--color-text-dark, #eaf3fb) !important;
 }
+
+.modal-editar-proyecto.finalizar-proyecto h3,
+.modal-editar-proyecto.finalizar-proyecto label,
+.modal-editar-proyecto.finalizar-proyecto .form-error {
+  color: #005fa3 !important;
+}
+[data-theme="dark"] .modal-editar-proyecto.finalizar-proyecto h3,
+[data-theme="dark"] .modal-editar-proyecto.finalizar-proyecto label,
+[data-theme="dark"] .modal-editar-proyecto.finalizar-proyecto .form-error {
+  color: #4db3fa !important;
+}
+.modal-editar-proyecto.finalizar-proyecto input, .modal-editar-proyecto.finalizar-proyecto select {
+  border: 1.5px solid #005fa3 !important;
+  color: #003366 !important;
+  background: #f4f8ff !important;
+}
+[data-theme="dark"] .modal-editar-proyecto.finalizar-proyecto input, [data-theme="dark"] .modal-editar-proyecto.finalizar-proyecto select {
+  border: 1.5px solid #4db3fa !important;
+  color: #eaf3fb !important;
+  background: #232a36 !important;
+}
+.modal-editar-proyecto.finalizar-proyecto input:focus, .modal-editar-proyecto.finalizar-proyecto select:focus {
+  border: 2px solid #005fa3 !important;
+  background: #eaf3fb !important;
+}
+[data-theme="dark"] .modal-editar-proyecto.finalizar-proyecto input:focus, [data-theme="dark"] .modal-editar-proyecto.finalizar-proyecto select:focus {
+  border: 2px solid #4db3fa !important;
+  background: #1e2b24 !important;
+}
+
+/* Título y detalles del modal finalizar: azul corporativo, sin verde */
 .modal-editar-proyecto h3 {
-  margin-top: 0;
-  margin-bottom: 1.2em;
-  color: var(--color-primary);
-  font-weight: 800;
-  text-align: center;
-  letter-spacing: 0.5px;
-}
-.modal-editar-proyecto form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1em;
-}
-.modal-editar-proyecto label {
-  display: flex;
-  flex-direction: column;
-  font-weight: 600;
-  color: var(--color-label-light);
-  margin-bottom: 0.2em;
-  font-size: 1.04em;
-}
-[data-theme="dark"] .modal-editar-proyecto {
-  background: var(--color-card-dark, #232a36);
-  color: var(--color-text-dark, #eaf3fb);
-}
-[data-theme="dark"] .modal-editar-proyecto label {
-  color: var(--color-label-dark);
-}
-.modal-editar-proyecto input, .modal-editar-proyecto select {
-  font-size: 1em;
-  padding: 0.5em 0.8em;
-  border-radius: 8px;
-  border: 1.5px solid var(--color-border-light);
-  background: var(--color-bg-light);
-  color: var(--color-text-light);
-  box-shadow: 0 1px 4px #00336610;
-  margin-top: 0.2em;
-  margin-bottom: 0.1em;
-  outline: none;
-  transition: border 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
-}
-.modal-editar-proyecto input:focus, .modal-editar-proyecto select:focus {
-  border: 2px solid var(--color-primary);
-  background: #eaf3fb;
-  color: var(--color-text-light);
-  box-shadow: 0 0 0 2px var(--color-primary-dark)22;
-}
-[data-theme="dark"] .modal-editar-proyecto input, [data-theme="dark"] .modal-editar-proyecto select {
-  background: #232a36;
-  color: #eaf3fb;
-  border: 1.5px solid #3a4252;
-}
-[data-theme="dark"] .modal-editar-proyecto input:focus, [data-theme="dark"] .modal-editar-proyecto select:focus {
-  background: #2a3444;
-  color: #eaf3fb;
-}
-.modal-editar-proyecto-actions {
-  display: flex;
-  gap: 1.2em;
-  justify-content: center;
-  margin-top: 1.2em;
-}
-.modal-editar-proyecto-actions button {
-  min-width: 110px;
-  padding: 0.7em 1.2em;
-  font-size: 1.07em;
-  border-radius: 9px;
+  color: #005fa3 !important;
+  letter-spacing: 0.02em;
   font-weight: 700;
-  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%);
-  color: #fff;
-  border: none;
-  box-shadow: 0 2px 8px #0033661a;
-  cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  text-align: center;
+  margin-bottom: 1em;
 }
-.modal-editar-proyecto-actions button.cancel {
-  background: #b0b8c1;
-  color: #222;
+.modal-editar-proyecto .form-error {
+  background: #eaf3fb !important;
+  color: #005fa3 !important;
+  border-radius: 7px;
+  padding: 0.5em 1em;
+  margin-bottom: 1em;
+  font-weight: 500;
+  box-shadow: 0 1px 4px #005fa322;
 }
-.modal-editar-proyecto-actions button:hover {
-  background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-primary) 100%);
-  transform: scale(1.04);
-}
-.modal-editar-proyecto-actions button.cancel:hover {
-  background: #e53935;
-  color: #fff;
-}
-@media (max-width: 700px) {
-  .modal-editar-proyecto {
-    padding: 1.2rem 0.7rem 0.7rem 0.7rem;
-    min-width: 0;
-    max-width: 99vw;
-  }
+[data-theme="dark"] .modal-editar-proyecto .form-error {
+  background: #1e2b24 !important;
+  color: #4db3fa !important;
 }

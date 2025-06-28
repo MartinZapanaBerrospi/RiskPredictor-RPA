@@ -169,6 +169,8 @@ def update_proyecto_ejecucion(proy_id: str, datos: dict):
 
 @app.post('/proyectos-ejecucion/{proy_id}/finalizar')
 def finalizar_proyecto(proy_id: str, datos_finales: dict):
+    # Mover a synthetic_data_with_outputs.csv
+    SYNTH_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/synthetic_data_with_outputs.csv'))
     # Leer proyectos en ejecución
     if not os.path.exists(PROY_EJEC_PATH):
         raise HTTPException(status_code=404, detail='No hay proyectos en ejecución')
@@ -188,49 +190,27 @@ def finalizar_proyecto(proy_id: str, datos_finales: dict):
         writer = csv.DictWriter(f, fieldnames=PROY_EJEC_FIELDS)
         writer.writeheader()
         writer.writerows(proyectos)
-    # Calcular campos extra igual que en preparacion.py
-    try:
-        costo_real = float(finalizado.get('costo_real', 0))
-        presupuesto_estimado = float(finalizado.get('presupuesto_estimado', 0))
-        duracion_real = float(finalizado.get('duracion_real', 0))
-        duracion_estimacion = float(finalizado.get('duracion_estimacion', 0))
-    except Exception:
-        costo_real = presupuesto_estimado = duracion_real = duracion_estimacion = 0
-    sobrecosto = int(costo_real > presupuesto_estimado)
-    retraso = int(duracion_real > duracion_estimacion)
-    # Ejemplo simple de puntos_riesgo (ajusta según tu lógica real)
-    puntos_riesgo = (
-        sobrecosto * 2 + retraso * 2 +
-        (1 if finalizado.get('complejidad', '').lower() == 'alta' else 0) +
-        (1 if finalizado.get('experiencia_equipo', '').isdigit() and int(finalizado.get('experiencia_equipo')) < 3 else 0)
-    )
-    # Añadir campos extra
-    finalizado['sobrecosto'] = sobrecosto
-    finalizado['retraso'] = retraso
-    finalizado['puntos_riesgo'] = puntos_riesgo
-    # DEBUG: Mostrar datos que se van a guardar
-    print('Finalizando proyecto:', finalizado)
-    print('Campos calculados:', {
-        'sobrecosto': sobrecosto,
-        'retraso': retraso,
-        'puntos_riesgo': puntos_riesgo
-    })
-    # Guardar solo en dataset.csv con los campos correctos
-    dataset_fields = [
+    # Agregar a synthetic_data_with_outputs.csv
+    synth_fields = [
         'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
         'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
-        'costo_real', 'duracion_real', 'sobrecosto', 'retraso', 'puntos_riesgo', 'riesgo_general'
+        'costo_real', 'duracion_real', 'riesgo_general'
     ]
-    print('Guardando en dataset.csv con campos:', dataset_fields)
-    print('Registro a guardar:', {k: finalizado.get(k, '') for k in dataset_fields})
+    file_exists = os.path.exists(SYNTH_PATH)
+    with open(SYNTH_PATH, 'a', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=synth_fields)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow({k: finalizado.get(k, '') for k in synth_fields})
+    # Agregar también a dataset.csv
     DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/dataset.csv'))
+    dataset_fields = synth_fields  # Puedes ajustar si dataset.csv tiene más campos
     file_exists_dataset = os.path.exists(DATASET_PATH)
     with open(DATASET_PATH, 'a', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=dataset_fields)
         if not file_exists_dataset:
             writer.writeheader()
         writer.writerow({k: finalizado.get(k, '') for k in dataset_fields})
-    print('Registro guardado en dataset.csv')
     return {"status": "ok"}
 
 @app.post('/reentrenar-modelo')

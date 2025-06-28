@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import ProyectosEjecucion from './ProyectosEjecucion';
 import ModalResultadoRiesgoPrincipal from './ModalResultadoRiesgoPrincipal';
+import Toast from './Toast';
 
 const initialState = {
   tipo_proyecto: '',
@@ -54,6 +55,7 @@ function App() {
   const [formPrediccion, setFormPrediccion] = useState<any>(null);
   const [puedeGuardar, setPuedeGuardar] = useState(false);
   const [retrainStatus, setRetrainStatus] = useState('');
+  const [toast, setToast] = useState<{message: string, type?: 'success'|'error'}|null>(null);
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/opciones-formulario')
@@ -125,11 +127,11 @@ function App() {
         }),
       });
       if (!response.ok) throw new Error('Error al guardar el proyecto');
-      alert('Proyecto guardado en ejecución');
+      setToast({ message: 'Proyecto guardado en ejecución correctamente', type: 'success' });
       setForm(initialState);
       setPuedeGuardar(false);
     } catch (err: any) {
-      setError(err.message || 'Error desconocido');
+      setToast({ message: err.message || 'Error desconocido', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -146,9 +148,16 @@ function App() {
     try {
       const res = await fetch('http://127.0.0.1:8000/reentrenar-modelo', { method: 'POST' });
       const data = await res.json();
-      setRetrainStatus(data.status === 'ok' ? '¡Reentrenamiento completado!' : 'Error al reentrenar');
+      if (data.status === 'ok') {
+        setRetrainStatus('¡Reentrenamiento completado!');
+        setToast({ message: 'Modelo reentrenado correctamente', type: 'success' });
+      } else {
+        setRetrainStatus('Error al reentrenar');
+        setToast({ message: 'Error al reentrenar el modelo', type: 'error' });
+      }
     } catch {
       setRetrainStatus('Error de red');
+      setToast({ message: 'Error de red al reentrenar', type: 'error' });
     }
   };
 
@@ -264,7 +273,19 @@ function App() {
       <button onClick={handleRetrain} style={{marginTop: 20, marginLeft: 10}}>
         Reentrenar modelo
       </button>
-      {retrainStatus && <span style={{marginLeft: 10}}>{retrainStatus}</span>}
+      {retrainStatus && (
+        <span style={{marginLeft: 10, color: retrainStatus.includes('completado') ? '#007a3d' : retrainStatus.includes('Error') ? '#b00020' : '#005fa3', fontWeight: 600, fontSize: '1.08em'}}>
+          {retrainStatus}
+        </span>
+      )}
+      {/* Si el reentrenamiento fue exitoso, muestra un mensaje adicional */}
+      {retrainStatus === '¡Reentrenamiento completado!' && (
+        <div style={{marginTop: 12, color: '#005fa3', background: '#eaf3fb', borderRadius: 8, padding: '0.7em 1.2em', fontWeight: 500, boxShadow: '0 1px 6px #005fa322'}}>
+          El modelo ha sido actualizado con los nuevos datos.<br />
+          Las próximas predicciones usarán el modelo mejorado.<br />
+          <span style={{fontSize: '0.97em', color: '#222'}}>Puedes continuar usando el sistema normalmente.</span>
+        </div>
+      )}
       {error && <div className="error">{error}</div>}
       <ModalResultadoRiesgoPrincipal
         open={modalRiesgoOpen}
@@ -272,6 +293,7 @@ function App() {
         resultado={resultadoRiesgo}
         proyecto={formPrediccion}
       />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
