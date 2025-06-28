@@ -14,6 +14,9 @@ const IconDelete = () => (
 const IconBack = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
 );
+const IconGoal = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+);
 
 interface Proyecto {
   id: string;
@@ -72,7 +75,8 @@ const ToastSuccess = ({ message, onClose }: { message: string, onClose: () => vo
 const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '';
 
 // Capitaliza cada palabra, pero respeta siglas (mayúsculas completas)
-function capitalizeWords(str: string) {
+function capitalizeWords(str: string | undefined | null) {
+  if (!str) return '';
   return str.split(' ').map(word =>
     word === word.toUpperCase() ? word : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
   ).join(' ');
@@ -93,6 +97,8 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [toast, setToast] = useState<{message: string, type: 'success'|'error'}|null>(null);
   const [proyectoEmail, setProyectoEmail] = useState<Proyecto | null>(null);
+  const [finalizandoId, setFinalizandoId] = useState<string | null>(null);
+  const [finalForm, setFinalForm] = useState({ costo_real: '', duracion_real: '', riesgo_general: 'Bajo' });
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/proyectos-ejecucion')
@@ -232,6 +238,32 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
     }
   };
 
+  // Finalizar proyecto
+  const handleFinalizar = async (id: string) => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/proyectos-ejecucion/${id}/finalizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...finalForm }),
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        setSuccess('Proyecto finalizado y movido al dataset');
+        setFinalizandoId(null);
+        setFinalForm({ costo_real: '', duracion_real: '', riesgo_general: 'Bajo' });
+      } else {
+        setError('Error al finalizar proyecto');
+      }
+    } catch {
+      setError('Error de red');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <ThemeToggleProyectos />
@@ -284,15 +316,15 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
               )}
               {proyectos.map((p) => (
                 <tr key={p.id}>
-                  <td>{capitalizeWords(p.tipo_proyecto)}</td>
-                  <td>{capitalizeWords(p.metodologia)}</td>
-                  <td>{p.duracion_estimacion}</td>
-                  <td>{p.presupuesto_estimado}</td>
-                  <td>{p.numero_recursos}</td>
-                  <td>{p.tecnologias.split(',').map(capitalizeWords).join(', ')}</td>
-                  <td>{capitalizeWords(p.complejidad)}</td>
-                  <td>{p.experiencia_equipo}</td>
-                  <td>{p.hitos_clave}</td>
+                  <td>{capitalizeWords(p.tipo_proyecto || '-')}</td>
+                  <td>{capitalizeWords(p.metodologia || '-')}</td>
+                  <td>{p.duracion_estimacion || '-'}</td>
+                  <td>{p.presupuesto_estimado || '-'}</td>
+                  <td>{p.numero_recursos || '-'}</td>
+                  <td>{(p.tecnologias ? p.tecnologias.split(',').map(capitalizeWords).join(', ') : '-')}</td>
+                  <td>{capitalizeWords(p.complejidad || '-')}</td>
+                  <td>{p.experiencia_equipo || '-'}</td>
+                  <td>{p.hitos_clave || '-'}</td>
                   <td>
                     <button className="crud-btn" onClick={() => handleEdit(p.id)} disabled={loading} title="Editar"><IconEdit /></button>
                     <button className="crud-btn delete" onClick={() => handleDelete(p.id)} disabled={loading} title="Eliminar"><IconDelete /></button>
@@ -300,6 +332,46 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
                     <button className="crud-btn email" onClick={() => handleEnviarEmail(p)} disabled={loading} title="Enviar reporte por email" style={{marginLeft: 4}}>
                       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
                     </button>
+                    <button className="crud-btn" onClick={() => { setFinalizandoId(p.id); setFinalForm({ costo_real: '', duracion_real: '', riesgo_general: 'Bajo' }); }} disabled={loading} title="Finalizar" style={{marginLeft: 4, background: '#4caf50', color: 'white', display: 'inline-flex', alignItems: 'center', gap: 4}}>
+                      <IconGoal /> Finalizar
+                    </button>
+                    {finalizandoId === p.id && (
+                      <form
+                        style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}
+                        onSubmit={e => {
+                          e.preventDefault();
+                          handleFinalizar(p.id);
+                        }}
+                      >
+                        <input
+                          type="number"
+                          placeholder="Costo real"
+                          value={finalForm.costo_real}
+                          onChange={e => setFinalForm(f => ({ ...f, costo_real: e.target.value }))}
+                          required
+                        />
+                        <input
+                          type="number"
+                          placeholder="Duración real"
+                          value={finalForm.duracion_real}
+                          onChange={e => setFinalForm(f => ({ ...f, duracion_real: e.target.value }))}
+                          required
+                        />
+                        <select
+                          value={finalForm.riesgo_general}
+                          onChange={e => setFinalForm(f => ({ ...f, riesgo_general: e.target.value }))}
+                          required
+                        >
+                          <option value="Bajo">Bajo</option>
+                          <option value="Medio">Medio</option>
+                          <option value="Alto">Alto</option>
+                        </select>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button type="submit" disabled={loading}>Guardar</button>
+                          <button type="button" onClick={() => setFinalizandoId(null)}>Cancelar</button>
+                        </div>
+                      </form>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -53,6 +53,7 @@ function App() {
   const [resultadoRiesgo, setResultadoRiesgo] = useState<any>(null);
   const [formPrediccion, setFormPrediccion] = useState<any>(null);
   const [puedeGuardar, setPuedeGuardar] = useState(false);
+  const [retrainStatus, setRetrainStatus] = useState('');
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/opciones-formulario')
@@ -138,6 +139,17 @@ function App() {
     setPuedeGuardar(false);
     setResultadoRiesgo(null);
     setFormPrediccion(null);
+  };
+
+  const handleRetrain = async () => {
+    setRetrainStatus('Reentrenando...');
+    try {
+      const res = await fetch('http://127.0.0.1:8000/reentrenar-modelo', { method: 'POST' });
+      const data = await res.json();
+      setRetrainStatus(data.status === 'ok' ? '¡Reentrenamiento completado!' : 'Error al reentrenar');
+    } catch {
+      setRetrainStatus('Error de red');
+    }
   };
 
   if (view === 'proyectos') {
@@ -249,6 +261,10 @@ function App() {
       <button onClick={() => setView('proyectos')} style={{marginTop: 20, marginRight: 10}}>
         Ver Proyectos en Ejecución
       </button>
+      <button onClick={handleRetrain} style={{marginTop: 20, marginLeft: 10}}>
+        Reentrenar modelo
+      </button>
+      {retrainStatus && <span style={{marginLeft: 10}}>{retrainStatus}</span>}
       {error && <div className="error">{error}</div>}
       <ModalResultadoRiesgoPrincipal
         open={modalRiesgoOpen}

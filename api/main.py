@@ -202,6 +202,15 @@ def finalizar_proyecto(proy_id: str, datos_finales: dict):
         if not file_exists:
             writer.writeheader()
         writer.writerow({k: finalizado.get(k, '') for k in synth_fields})
+    # Agregar también a dataset.csv
+    DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/dataset.csv'))
+    dataset_fields = synth_fields  # Puedes ajustar si dataset.csv tiene más campos
+    file_exists_dataset = os.path.exists(DATASET_PATH)
+    with open(DATASET_PATH, 'a', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=dataset_fields)
+        if not file_exists_dataset:
+            writer.writeheader()
+        writer.writerow({k: finalizado.get(k, '') for k in dataset_fields})
     return {"status": "ok"}
 
 @app.post('/reentrenar-modelo')
