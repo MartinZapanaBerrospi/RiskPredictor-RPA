@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import ProyectosEjecucion from './ProyectosEjecucion';
+import ModalResultadoRiesgoPrincipal from './ModalResultadoRiesgoPrincipal';
 
 const initialState = {
   tipo_proyecto: '',
@@ -20,15 +21,38 @@ type Opciones = {
   metodologia?: string[];
 };
 
+function ThemeToggle() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+  return (
+    <button
+      className="theme-toggle"
+      aria-label="Cambiar tema"
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      title={theme === 'light' ? 'Modo oscuro' : 'Modo claro'}
+    >
+      <span className="icon" style={{transition: 'transform 0.3s'}}>
+        {theme === 'light'
+          ? (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>)
+          : (<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>)}
+      </span>
+    </button>
+  );
+}
+
 function App() {
   const [form, setForm] = useState<any>(initialState);
-  const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [opciones, setOpciones] = useState<Opciones>({ tipo_proyecto: [], tecnologias: [], metodologia: [] });
-  const [retrainStatus, setRetrainStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
-  const [retrainOutput, setRetrainOutput] = useState<string>('');
   const [view, setView] = useState<'form' | 'proyectos'>('form');
+  const [modalRiesgoOpen, setModalRiesgoOpen] = useState(false);
+  const [resultadoRiesgo, setResultadoRiesgo] = useState<any>(null);
+  const [formPrediccion, setFormPrediccion] = useState<any>(null);
+  const [puedeGuardar, setPuedeGuardar] = useState(false);
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/opciones-formulario')
@@ -53,7 +77,7 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setResult(null);
+    setResultadoRiesgo(null);
     try {
       const response = await fetch('http://127.0.0.1:8000/predict', {
         method: 'POST',
@@ -70,7 +94,10 @@ function App() {
       });
       if (!response.ok) throw new Error('Error en la predicción');
       const data = await response.json();
-      setResult(data);
+      setResultadoRiesgo(data);
+      setFormPrediccion(form);
+      setModalRiesgoOpen(true);
+      setPuedeGuardar(true);
     } catch (err: any) {
       setError(err.message || 'Error desconocido');
     } finally {
@@ -99,134 +126,136 @@ function App() {
       if (!response.ok) throw new Error('Error al guardar el proyecto');
       alert('Proyecto guardado en ejecución');
       setForm(initialState);
+      setPuedeGuardar(false);
     } catch (err: any) {
       setError(err.message || 'Error desconocido');
     } finally {
       setLoading(false);
     }
   };
-
-  // Reentrenar modelo
-  const handleRetrain = async () => {
-    setRetrainStatus('loading');
-    setRetrainOutput('');
-    try {
-      const response = await fetch('http://127.0.0.1:8000/reentrenar-modelo', {
-        method: 'POST',
-      });
-      const data = await response.json();
-      if (data.status === 'ok') {
-        setRetrainStatus('ok');
-        setRetrainOutput(data.output);
-      } else {
-        setRetrainStatus('error');
-        setRetrainOutput(data.output || 'Error desconocido');
-      }
-    } catch (err: any) {
-      setRetrainStatus('error');
-      setRetrainOutput(err.message || 'Error desconocido');
-    }
+  const handleLimpiarCampos = () => {
+    setForm(initialState);
+    setPuedeGuardar(false);
+    setResultadoRiesgo(null);
+    setFormPrediccion(null);
   };
 
   if (view === 'proyectos') {
     return (
-      <div className="container">
-        <button onClick={() => setView('form')} style={{marginBottom: 20}}>Volver</button>
-        <ProyectosEjecucion />
-      </div>
+      <>
+        <ProyectosEjecucion onBack={() => setView('form')} />
+      </>
     );
   }
 
   return (
     <div className="container">
+      <ThemeToggle />
       <h1>Predicción de Riesgos en Proyectos TI</h1>
       <form onSubmit={handleSubmit} className="risk-form">
-        <label>Tipo de Proyecto:
-          <select name="tipo_proyecto" value={form.tipo_proyecto} onChange={handleChange} required>
-            <option value="">Seleccione...</option>
-            {opciones.tipo_proyecto.map((op) => (
-              <option key={op} value={op}>{op}</option>
-            ))}
-          </select>
-        </label>
-        <label>Metodología:
-          <select name="metodologia" value={form.metodologia} onChange={handleChange} required>
-            <option value="">Seleccione...</option>
-            {opciones.metodologia && opciones.metodologia.map((op) => (
-              <option key={op} value={op}>{op}</option>
-            ))}
-          </select>
-        </label>
-        <label>Duración Estimada (meses):
-          <input name="duracion_estimacion" type="number" min="1" value={form.duracion_estimacion} onChange={handleChange} required />
-        </label>
-        <label>Presupuesto Estimado:
-          <input name="presupuesto_estimado" type="number" min="1" value={form.presupuesto_estimado} onChange={handleChange} required />
-        </label>
-        <label>Número de Recursos:
-          <input name="numero_recursos" type="number" min="1" value={form.numero_recursos} onChange={handleChange} required />
-        </label>
-        <label>Tecnologías:</label>
-        <div className="tecnologias-group">
-          {opciones.tecnologias.map((tec) => (
-            <label key={tec} style={{marginRight: 10}}>
-              <input
-                type="checkbox"
-                name="tecnologias"
-                value={tec}
-                checked={form.tecnologias.includes(tec)}
-                onChange={handleChange}
-              />
-              {tec}
-            </label>
-          ))}
+        <div className="form-group">
+          <label>Tipo de Proyecto:
+            <select name="tipo_proyecto" value={form.tipo_proyecto} onChange={handleChange} required>
+              <option value="">Seleccione...</option>
+              {opciones.tipo_proyecto.map((op) => (
+                <option key={op} value={op}>{op}</option>
+              ))}
+            </select>
+          </label>
         </div>
-        <label>Complejidad:
-          <select name="complejidad" value={form.complejidad} onChange={handleChange} required>
-            <option value="baja">Baja</option>
-            <option value="media">Media</option>
-            <option value="alta">Alta</option>
-          </select>
-        </label>
-        <label>Experiencia del Equipo (años):
-          <input name="experiencia_equipo" type="number" min="1" value={form.experiencia_equipo} onChange={handleChange} required />
-        </label>
-        <label>Número de Hitos Clave:
-          <input name="hitos_clave" type="number" min="1" value={form.hitos_clave} onChange={handleChange} required />
-        </label>
-        <button type="submit" disabled={loading}>{loading ? 'Prediciendo...' : 'Predecir Riesgo'}</button>
-        <button type="button" onClick={handleGuardarProyecto} disabled={loading} style={{marginLeft: 10}}>
-          Guardar en Ejecución
-        </button>
+        <div className="form-group">
+          <label>Metodología:
+            <select name="metodologia" value={form.metodologia} onChange={handleChange} required>
+              <option value="">Seleccione...</option>
+              {opciones.metodologia && opciones.metodologia.map((op) => (
+                <option key={op} value={op}>{op}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="form-group">
+          <label>Duración Estimada (meses):
+            <input name="duracion_estimacion" type="number" min="1" value={form.duracion_estimacion} onChange={handleChange} required />
+          </label>
+        </div>
+        <div className="form-group">
+          <label>Presupuesto Estimado:
+            <input name="presupuesto_estimado" type="number" min="1" value={form.presupuesto_estimado} onChange={handleChange} required />
+          </label>
+        </div>
+        <div className="form-group">
+          <label>Número de Recursos:
+            <input name="numero_recursos" type="number" min="1" value={form.numero_recursos} onChange={handleChange} required />
+          </label>
+        </div>
+        <div className="form-group tecnologias-group-wrapper">
+          <label>Tecnologías:</label>
+          <div className="tecnologias-group">
+            {opciones.tecnologias.map((tec) => (
+              <label key={tec}>
+                <input
+                  type="checkbox"
+                  name="tecnologias"
+                  value={tec}
+                  checked={form.tecnologias.includes(tec)}
+                  onChange={handleChange}
+                />
+                {tec}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Complejidad:
+            <select name="complejidad" value={form.complejidad} onChange={handleChange} required>
+              <option value="baja">Baja</option>
+              <option value="media">Media</option>
+              <option value="alta">Alta</option>
+            </select>
+          </label>
+        </div>
+        <div className="form-group">
+          <label>Experiencia del Equipo (años):
+            <input name="experiencia_equipo" type="number" min="1" value={form.experiencia_equipo} onChange={handleChange} required />
+          </label>
+        </div>
+        <div className="form-group">
+          <label>Número de Hitos Clave:
+            <input name="hitos_clave" type="number" min="1" value={form.hitos_clave} onChange={handleChange} required />
+          </label>
+        </div>
+        <div className="buttons-row">
+          <button type="submit" disabled={loading}>{loading ? 'Prediciendo...' : 'Predecir Riesgo'}</button>
+          <button
+            type="button"
+            onClick={handleGuardarProyecto}
+            disabled={loading || !puedeGuardar}
+            style={{marginLeft: 0, opacity: !puedeGuardar ? 0.5 : 1, pointerEvents: !puedeGuardar ? 'none' : 'auto'}}
+            title={!puedeGuardar ? 'Primero realice una predicción' : 'Guardar en Ejecución'}
+          >
+            Guardar en Ejecución
+          </button>
+          <button
+            type="button"
+            onClick={handleLimpiarCampos}
+            disabled={loading}
+            style={{marginLeft: 0}}
+            title="Limpiar campos"
+          >
+            Limpiar
+          </button>
+        </div>
       </form>
       <button onClick={() => setView('proyectos')} style={{marginTop: 20, marginRight: 10}}>
         Ver Proyectos en Ejecución
       </button>
-      <button onClick={handleRetrain} disabled={retrainStatus === 'loading'} style={{marginTop: 20}}>
-        {retrainStatus === 'loading' ? 'Reentrenando...' : 'Reentrenar Modelo'}
-      </button>
       {error && <div className="error">{error}</div>}
-      {result && (
-        <div className="result">
-          <h2>Resultado</h2>
-          <p><b>Riesgo General:</b> {result.riesgo_general}</p>
-          <p><b>Probabilidades de Riesgo:</b></p>
-          <ul>
-            {Object.entries(result.probabilidades_riesgo).map(([k, v]) => (
-              <li key={k}>{k}: {(v as number * 100).toFixed(1)}%</li>
-            ))}
-          </ul>
-          <p><b>Probabilidad de Sobrecosto:</b> {(result.probabilidad_sobrecosto * 100).toFixed(1)}%</p>
-          <p><b>Probabilidad de Retraso:</b> {(result.probabilidad_retraso * 100).toFixed(1)}%</p>
-          <button style={{marginTop: 16}} disabled>Descargar reporte</button>
-        </div>
-      )}
-      {retrainStatus !== 'idle' && (
-        <div className="retrain-status" style={{marginTop: 10}}>
-          <b>Estado de reentrenamiento:</b> {retrainStatus === 'ok' ? '¡Completado!' : retrainStatus === 'loading' ? 'En progreso...' : 'Error'}
-          <pre style={{background: '#f4f4f4', padding: 10, maxHeight: 200, overflow: 'auto'}}>{retrainOutput}</pre>
-        </div>
-      )}
+      <ModalResultadoRiesgoPrincipal
+        open={modalRiesgoOpen}
+        onClose={() => setModalRiesgoOpen(false)}
+        resultado={resultadoRiesgo}
+        proyecto={formPrediccion}
+      />
     </div>
   );
 }

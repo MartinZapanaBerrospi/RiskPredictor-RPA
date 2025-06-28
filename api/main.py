@@ -5,13 +5,14 @@ import pandas as pd
 from pydantic import BaseModel
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import os
 import json
 import uuid
 import csv
 import subprocess
 import sys
+from utils.reporte_profesional import generar_reporte_pdf
 
 app = FastAPI()
 
@@ -221,3 +222,69 @@ def reentrenar_modelo(background_tasks: BackgroundTasks):
         return {"status": "ok", "output": result.stdout}
     except subprocess.CalledProcessError as e:
         return {"status": "error", "output": e.stdout + '\n' + e.stderr}
+
+@app.post('/generar-reporte')
+def generar_reporte(proyecto: ProyectoInput):
+    # Predecir riesgo igual que en /predict
+    X_pred = pd.DataFrame([proyecto.dict()])
+    X_pred['tipo_proyecto_enc'] = le_tipo.transform(X_pred['tipo_proyecto'])
+    X_pred['metodologia_enc'] = le_metodologia.transform(X_pred['metodologia'])
+    X_pred['complejidad_enc'] = le_complejidad.transform(X_pred['complejidad'])
+    X_pred['experiencia_equipo_enc'] = X_pred['experiencia_equipo']
+    tec_matrix = mlb.transform([X_pred.loc[0, 'tecnologias'].split(',')])
+    tec_df = pd.DataFrame(tec_matrix, columns=[f'tec_{t}' for t in mlb.classes_])
+    for col in tec_df.columns:
+        X_pred[col] = tec_df[col].values
+    features = [
+        'tipo_proyecto_enc', 'metodologia_enc', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+        'complejidad_enc', 'experiencia_equipo_enc', 'hitos_clave'
+    ] + list(tec_df.columns)
+    for col in features:
+        if col not in X_pred:
+            X_pred[col] = 0
+    X_pred = X_pred[features]
+    pred = model.predict(X_pred)[0]
+    pred_label = le_riesgo.inverse_transform([pred])[0]
+    pred_proba = model.predict_proba(X_pred)[0]
+    # Preparar datos para el reporte
+    proyecto_dict = {
+        "Tipo de proyecto": proyecto.tipo_proyecto,
+        "Metodología": proyecto.metodologia,
+        "Duración estimada (meses)": proyecto.duracion_estimacion,
+        "Presupuesto estimado (USD)": proyecto.presupuesto_estimado,
+        "Número de recursos": proyecto.numero_recursos,
+        "Tecnologías": proyecto.tecnologias,
+        "Complejidad": proyecto.complejidad,
+        "Experiencia del equipo": proyecto.experiencia_equipo,
+        "Hitos clave": proyecto.hitos_clave
+    }
+    prediccion_dict = {
+        "riesgo_general": pred_label,
+        "probabilidades": {clase: float(proba) for clase, proba in zip(le_riesgo.classes_, pred_proba)}
+    }
+    # Generar PDF temporal
+    pdf_path = f"reporte_riesgo_{uuid.uuid4().hex}.pdf"
+    generar_reporte_pdf(proyecto_dict, prediccion_dict, filename=pdf_path)
+    # Devolver el PDF como descarga
+    return FileResponse(pdf_path, media_type='application/pdf', filename='reporte_riesgo.pdf')
+
+@app.delete('/proyectos-ejecucion/{proy_id}')
+def delete_proyecto_ejecucion(proy_id: str):
+    if not os.path.exists(PROY_EJEC_PATH):
+        raise HTTPException(status_code=404, detail='No hay proyectos en ejecución')
+    proyectos = []
+    deleted = False
+    with open(PROY_EJEC_PATH, encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row['id'] == proy_id:
+                deleted = True
+                continue
+            proyectos.append(row)
+    if not deleted:
+        raise HTTPException(status_code=404, detail='Proyecto no encontrado')
+    with open(PROY_EJEC_PATH, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=PROY_EJEC_FIELDS)
+        writer.writeheader()
+        writer.writerows(proyectos)
+    return {"status": "ok"}
