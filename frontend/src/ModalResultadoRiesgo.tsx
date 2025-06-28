@@ -25,20 +25,32 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
   const handleSendEmail = async (email: string) => {
     setLoadingEmail(true);
     try {
+      // Adaptar la estructura de predicción para el backend
+      const prediccion = resultado
+        ? {
+            riesgo_general: resultado.riesgo_general,
+            probabilidades: resultado.probabilidades_riesgo, // clave correcta para backend
+            probabilidad_sobrecosto: resultado.probabilidad_sobrecosto,
+            probabilidad_retraso: resultado.probabilidad_retraso
+          }
+        : null;
       const response = await fetch('http://127.0.0.1:8000/enviar-reporte-mailhog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...proyecto,
-          tecnologias: Array.isArray(proyecto.tecnologias)
-            ? proyecto.tecnologias.join(',')
-            : (typeof proyecto.tecnologias === 'string' ? proyecto.tecnologias : ''),
-          duracion_estimacion: Number(proyecto.duracion_estimacion),
-          presupuesto_estimado: Number(proyecto.presupuesto_estimado),
-          numero_recursos: Number(proyecto.numero_recursos),
-          experiencia_equipo: Number(proyecto.experiencia_equipo),
-          hitos_clave: Number(proyecto.hitos_clave),
-          email_destino: email
+          destinatario: email,
+          proyecto: {
+            ...proyecto,
+            tecnologias: Array.isArray(proyecto.tecnologias)
+              ? proyecto.tecnologias.join(',')
+              : (typeof proyecto.tecnologias === 'string' ? proyecto.tecnologias : ''),
+            duracion_estimacion: Number(proyecto.duracion_estimacion),
+            presupuesto_estimado: Number(proyecto.presupuesto_estimado),
+            numero_recursos: Number(proyecto.numero_recursos),
+            experiencia_equipo: Number(proyecto.experiencia_equipo),
+            hitos_clave: Number(proyecto.hitos_clave),
+          },
+          prediccion
         })
       });
       if (!response.ok) throw new Error('No se pudo enviar el email');

@@ -73,24 +73,27 @@ class PDFReport(FPDF):
 
 def generar_reporte_pdf(proyecto, prediccion=None, filename="reporte_riesgo.pdf"):
     pdf = PDFReport()
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_auto_page_break(auto=False, margin=15)
 
     # Sección: Datos del Proyecto
     pdf.section_title('Datos del Proyecto')
     pdf.add_table(proyecto)
 
-    # Sección: Resultado de la Predicción (solo si hay predicción)
+    # Sección: Resultado de la Predicción (debajo de la tabla, en la misma hoja si hay espacio)
+    pdf.section_title('Resultado de la Predicción')
     if prediccion and isinstance(prediccion, dict) and prediccion.get('riesgo_general'):
-        pdf.section_title('Resultado de la Predicción')
         pdf.section_body(f"Riesgo General: {prediccion['riesgo_general']}")
         if 'probabilidades' in prediccion:
             pdf.add_probabilities(prediccion['probabilidades'])
+        if 'probabilidad_sobrecosto' in prediccion:
+            pdf.section_body(f"Probabilidad de sobrecosto: {prediccion['probabilidad_sobrecosto']*100:.1f}%")
+        if 'probabilidad_retraso' in prediccion:
+            pdf.section_body(f"Probabilidad de retraso: {prediccion['probabilidad_retraso']*100:.1f}%")
     else:
-        pdf.section_title('Resultado de la Predicción')
         pdf.section_body("No se ha realizado una predicción para este proyecto.")
 
-    # Sección: Interpretación
+    # Sección: Interpretación (debajo de lo anterior, en la misma hoja si hay espacio)
     pdf.section_title('Interpretación de Resultados')
     interpretacion = ""
     riesgo = prediccion.get('riesgo_general', '').lower() if prediccion else ''
