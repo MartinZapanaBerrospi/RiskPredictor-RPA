@@ -18,7 +18,8 @@ inputs = [
     'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave'
 ]
-df = pd.read_csv('synthetic_data_with_outputs.csv')
+DATA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/dataset.csv'))
+df = pd.read_csv(DATA_PATH)
 le_tipo = LabelEncoder()
 df['tipo_proyecto_enc'] = le_tipo.fit_transform(df['tipo_proyecto'])
 # Codificar metodologia

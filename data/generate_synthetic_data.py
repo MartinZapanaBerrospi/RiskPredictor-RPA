@@ -147,15 +147,18 @@ cond_alto = (df['puntos_riesgo'] >= 3) | ((df['riesgo_costo_prob'] > 0.7) & (df[
 cond_medio = (df['puntos_riesgo'] == 2) | ((df['riesgo_costo_prob'] > 0.7) | (df['riesgo_tiempo_prob'] > 0.7))
 df['riesgo_general'] = np.select([cond_alto, cond_medio], ['Alto', 'Medio'], default='Bajo')
 
-# Guardar solo los inputs y riesgo_general en synthetic_data_with_outputs.csv
-cols = [
+# Guardar todos los campos relevantes en synthetic_data_with_outputs.csv
+cols_full = [
     'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
-    'costo_real', 'duracion_real', 'riesgo_general'
+    'costo_real', 'duracion_real',
+    'sobrecosto', 'retraso',
+    'riesgo_costo_prob', 'riesgo_tiempo_prob',
+    'puntos_riesgo', 'riesgo_general'
 ]
-df[cols].to_csv('synthetic_data_with_outputs.csv', index=False)
+df[cols_full].to_csv('synthetic_data_with_outputs.csv', index=False)
 
-# Guardar solo los inputs en synthetic_data.csv
+# Guardar solo los inputs en synthetic_data.csv (sin sobrecosto, retraso ni puntos_riesgo)
 inputs_cols = [
     'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
@@ -163,4 +166,4 @@ inputs_cols = [
 ]
 df[inputs_cols].to_csv('synthetic_data.csv', index=False)
 
-print('¡Inputs guardados en synthetic_data.csv y riesgo_general en synthetic_data_with_outputs.csv!')
+print('¡Datos completos guardados en synthetic_data_with_outputs.csv y solo inputs en synthetic_data.csv!')
