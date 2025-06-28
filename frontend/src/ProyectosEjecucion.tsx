@@ -71,6 +71,13 @@ const ToastSuccess = ({ message, onClose }: { message: string, onClose: () => vo
 // Capitaliza la primera letra y pone el resto en minúscula
 const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '';
 
+// Capitaliza cada palabra, pero respeta siglas (mayúsculas completas)
+function capitalizeWords(str: string) {
+  return str.split(' ').map(word =>
+    word === word.toUpperCase() ? word : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ');
+}
+
 export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) {
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -277,13 +284,13 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
               )}
               {proyectos.map((p) => (
                 <tr key={p.id}>
-                  <td>{capitalize(p.tipo_proyecto)}</td>
-                  <td>{capitalize(p.metodologia)}</td>
+                  <td>{capitalizeWords(p.tipo_proyecto)}</td>
+                  <td>{capitalizeWords(p.metodologia)}</td>
                   <td>{p.duracion_estimacion}</td>
                   <td>{p.presupuesto_estimado}</td>
                   <td>{p.numero_recursos}</td>
-                  <td>{p.tecnologias.split(',').map(capitalize).join(', ')}</td>
-                  <td>{capitalize(p.complejidad)}</td>
+                  <td>{p.tecnologias.split(',').map(capitalizeWords).join(', ')}</td>
+                  <td>{capitalizeWords(p.complejidad)}</td>
                   <td>{p.experiencia_equipo}</td>
                   <td>{p.hitos_clave}</td>
                   <td>

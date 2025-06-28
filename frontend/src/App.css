@@ -639,9 +639,11 @@ tbody td {
   font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
   font-variant: normal;
   font-size: 1.07em;
-  text-transform: capitalize;
+  text-transform: none;
   vertical-align: middle;
   transition: background 0.3s, color 0.3s;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 tbody tr:last-child td {
   border-bottom: none;
