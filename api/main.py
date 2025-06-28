@@ -1,9 +1,9 @@
 # API for risk prediction using FastAPI
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 import joblib
 import pandas as pd
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 import os
@@ -13,6 +13,7 @@ import csv
 import subprocess
 import sys
 from utils.reporte_profesional import generar_reporte_pdf
+from utils.email_mailhog import enviar_reporte_mailhog
 
 app = FastAPI()
 
@@ -40,6 +41,11 @@ class ProyectoInput(BaseModel):
     complejidad: str
     experiencia_equipo: int
     hitos_clave: int
+
+class EnvioReporteRequest(BaseModel):
+    destinatario: str
+    proyecto: dict
+    prediccion: Optional[dict] = None
 
 app.add_middleware(
     CORSMiddleware,
@@ -267,6 +273,58 @@ def generar_reporte(proyecto: ProyectoInput):
     generar_reporte_pdf(proyecto_dict, prediccion_dict, filename=pdf_path)
     # Devolver el PDF como descarga
     return FileResponse(pdf_path, media_type='application/pdf', filename='reporte_riesgo.pdf')
+
+@app.post('/enviar-reporte-mailhog')
+def enviar_reporte_mailhog_endpoint(request: EnvioReporteRequest):
+    """
+    Genera el PDF y lo envía por email usando MailHog (localhost:1025).
+    El PDF será idéntico al de descarga, con predicción si es posible.
+    """
+    ruta_pdf = 'reporte_riesgo.pdf'
+    from utils.reporte_profesional import generar_reporte_pdf
+    # Si no hay predicción, la calculamos igual que en /generar-reporte
+    prediccion = request.prediccion
+    if not prediccion and request.proyecto:
+        # Simula ProyectoInput
+        class Dummy:
+            def __init__(self, d):
+                self.__dict__ = d
+            def dict(self):
+                return self.__dict__
+        proyecto_obj = Dummy(request.proyecto)
+        X_pred = pd.DataFrame([proyecto_obj.dict()])
+        X_pred['tipo_proyecto_enc'] = le_tipo.transform(X_pred['tipo_proyecto'])
+        X_pred['metodologia_enc'] = le_metodologia.transform(X_pred['metodologia'])
+        X_pred['complejidad_enc'] = le_complejidad.transform(X_pred['complejidad'])
+        X_pred['experiencia_equipo_enc'] = X_pred['experiencia_equipo']
+        tec_matrix = mlb.transform([X_pred.loc[0, 'tecnologias'].split(',')])
+        tec_df = pd.DataFrame(tec_matrix, columns=[f'tec_{t}' for t in mlb.classes_])
+        for col in tec_df.columns:
+            X_pred[col] = tec_df[col].values
+        features = [
+            'tipo_proyecto_enc', 'metodologia_enc', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
+            'complejidad_enc', 'experiencia_equipo_enc', 'hitos_clave'
+        ] + list(tec_df.columns)
+        for col in features:
+            if col not in X_pred:
+                X_pred[col] = 0
+        X_pred = X_pred[features]
+        pred = model.predict(X_pred)[0]
+        pred_label = le_riesgo.inverse_transform([pred])[0]
+        pred_proba = model.predict_proba(X_pred)[0]
+        sobrecosto_proba = sobrecosto_model.predict_proba(X_pred)[0][1]
+        retraso_proba = retraso_model.predict_proba(X_pred)[0][1]
+        prediccion = {
+            "riesgo_general": pred_label,
+            "probabilidades": {clase: float(proba) for clase, proba in zip(le_riesgo.classes_, pred_proba)},
+            "probabilidad_sobrecosto": float(sobrecosto_proba),
+            "probabilidad_retraso": float(retraso_proba)
+        }
+    generar_reporte_pdf(request.proyecto, prediccion or {}, filename=ruta_pdf)
+    asunto = "Reporte de Evaluación de Riesgo"
+    cuerpo = "Adjunto encontrará el reporte PDF generado automáticamente."
+    enviar_reporte_mailhog(request.destinatario, asunto, cuerpo, ruta_pdf)
+    return {"mensaje": "Reporte enviado correctamente a MailHog"}
 
 @app.delete('/proyectos-ejecucion/{proy_id}')
 def delete_proyecto_ejecucion(proy_id: str):

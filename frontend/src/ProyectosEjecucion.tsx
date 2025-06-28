@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import ModalEditarProyecto from './ModalEditarProyecto';
 import ModalResultadoRiesgo from './ModalResultadoRiesgo';
+import ModalEnviarEmail from './ModalEnviarEmail';
+import Toast from './Toast';
 
 // Iconos SVG inline para CRUD
 const IconEdit = () => (
@@ -80,6 +82,11 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
   const [modalRiesgoOpen, setModalRiesgoOpen] = useState(false);
   const [resultadoRiesgo, setResultadoRiesgo] = useState<any>(null);
   const [proyectoRiesgo, setProyectoRiesgo] = useState<any>(null);
+  const [modalEmailOpen, setModalEmailOpen] = useState(false);
+  const [loadingEmail, setLoadingEmail] = useState(false);
+  const [toast, setToast] = useState<{message: string, type: 'success'|'error'}|null>(null);
+  const [proyectoEmail, setProyectoEmail] = useState<Proyecto | null>(null);
+
   useEffect(() => {
     fetch('http://127.0.0.1:8000/proyectos-ejecucion')
       .then(res => res.json())
@@ -177,6 +184,47 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
     }
   };
 
+  // Envío de reporte por email desde la tabla
+  const handleEnviarEmail = (proyecto: Proyecto) => {
+    setProyectoEmail(proyecto);
+    setModalEmailOpen(true);
+  };
+  const handleSendEmail = async (email: string) => {
+    if (!proyectoEmail) return;
+    setLoadingEmail(true);
+    try {
+      const response = await fetch('http://127.0.0.1:8000/enviar-reporte-mailhog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destinatario: email,
+          proyecto: {
+            ...(() => {
+              const { id, ...rest } = proyectoEmail;
+              return rest;
+            })(),
+            tecnologias: Array.isArray(proyectoEmail.tecnologias)
+              ? proyectoEmail.tecnologias.join(',')
+              : (typeof proyectoEmail.tecnologias === 'string' ? proyectoEmail.tecnologias : ''),
+            duracion_estimacion: Number(proyectoEmail.duracion_estimacion),
+            presupuesto_estimado: Number(proyectoEmail.presupuesto_estimado),
+            numero_recursos: Number(proyectoEmail.numero_recursos),
+            experiencia_equipo: Number(proyectoEmail.experiencia_equipo),
+            hitos_clave: Number(proyectoEmail.hitos_clave),
+          },
+          prediccion: null // No hay predicción en la tabla, solo datos del proyecto
+        })
+      });
+      if (!response.ok) throw new Error('No se pudo enviar el email');
+      setToast({ message: 'Reporte enviado exitosamente', type: 'success' });
+      setModalEmailOpen(false);
+    } catch (e: any) {
+      setToast({ message: e.message || 'Error al enviar email', type: 'error' });
+    } finally {
+      setLoadingEmail(false);
+    }
+  };
+
   return (
     <>
       <ThemeToggleProyectos />
@@ -192,6 +240,15 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
         resultado={resultadoRiesgo}
         proyecto={proyectoRiesgo}
       />
+      <ModalEnviarEmail
+        open={modalEmailOpen}
+        onClose={() => setModalEmailOpen(false)}
+        onSend={handleSendEmail}
+        loading={loadingEmail}
+      />
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
       <div className="container container-proyectos">
         <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%'}}>
           <h2>Proyectos en Ejecución</h2>
@@ -233,6 +290,9 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
                     <button className="crud-btn" onClick={() => handleEdit(p.id)} disabled={loading} title="Editar"><IconEdit /></button>
                     <button className="crud-btn delete" onClick={() => handleDelete(p.id)} disabled={loading} title="Eliminar"><IconDelete /></button>
                     <button className="crud-btn save" onClick={() => handlePredecir(p)} disabled={loading} title="Predecir"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V6M5 12l7-7 7 7"/></svg></button>
+                    <button className="crud-btn email" onClick={() => handleEnviarEmail(p)} disabled={loading} title="Enviar reporte por email" style={{marginLeft: 4}}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
+                    </button>
                   </td>
                 </tr>
               ))}

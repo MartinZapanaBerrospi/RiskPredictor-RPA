@@ -1,10 +1,18 @@
 from fpdf import FPDF
 from datetime import datetime
+import re
 
 def capitalize_text(text):
-    if isinstance(text, str):
-        return text[:1].upper() + text[1:].lower() if text else ''
-    return text
+    if not isinstance(text, str):
+        return text
+    # Capitaliza cada palabra, pero mantiene siglas (3+ mayúsculas) y palabras de 2 letras en mayúsculas
+    def smart_cap(word):
+        if word.isupper() and len(word) > 2:
+            return word  # Siglas
+        if len(word) <= 2:
+            return word.upper()  # Palabras cortas tipo TI, IA
+        return word[:1].upper() + word[1:].lower()
+    return ' '.join(smart_cap(w) for w in re.split(r'(\s+)', text))
 
 class PDFReport(FPDF):
     def header(self):
@@ -63,7 +71,7 @@ class PDFReport(FPDF):
             self.cell(0, 8, f'{prob*100:.1f} %', 1, 1, 'C', False)
         self.ln(2)
 
-def generar_reporte_pdf(proyecto, prediccion, filename="reporte_riesgo.pdf"):
+def generar_reporte_pdf(proyecto, prediccion=None, filename="reporte_riesgo.pdf"):
     pdf = PDFReport()
     pdf.add_page()
     pdf.set_auto_page_break(auto=False, margin=15)
@@ -72,15 +80,20 @@ def generar_reporte_pdf(proyecto, prediccion, filename="reporte_riesgo.pdf"):
     pdf.section_title('Datos del Proyecto')
     pdf.add_table(proyecto)
 
-    # Sección: Resultado de la Predicción
-    pdf.section_title('Resultado de la Predicción')
-    pdf.section_body(f"Riesgo General: {prediccion['riesgo_general']}")
-    pdf.add_probabilities(prediccion['probabilidades'])
+    # Sección: Resultado de la Predicción (solo si hay predicción)
+    if prediccion and isinstance(prediccion, dict) and prediccion.get('riesgo_general'):
+        pdf.section_title('Resultado de la Predicción')
+        pdf.section_body(f"Riesgo General: {prediccion['riesgo_general']}")
+        if 'probabilidades' in prediccion:
+            pdf.add_probabilities(prediccion['probabilidades'])
+    else:
+        pdf.section_title('Resultado de la Predicción')
+        pdf.section_body("No se ha realizado una predicción para este proyecto.")
 
     # Sección: Interpretación
     pdf.section_title('Interpretación de Resultados')
     interpretacion = ""
-    riesgo = prediccion.get('riesgo_general', '').lower()
+    riesgo = prediccion.get('riesgo_general', '').lower() if prediccion else ''
     if riesgo == 'alto':
         interpretacion += (
             "El modelo ha determinado que el riesgo general del proyecto es ALTO. Esto significa que, según los datos ingresados, existe una alta probabilidad de que el proyecto enfrente dificultades significativas en su ejecución, como retrasos, sobrecostos o problemas de calidad. Se recomienda tomar medidas preventivas inmediatas, reforzar la gestión y monitorear de cerca los hitos críticos.\n\n"
@@ -95,11 +108,11 @@ def generar_reporte_pdf(proyecto, prediccion, filename="reporte_riesgo.pdf"):
         )
     else:
         interpretacion += (
-            "El modelo ha generado un resultado de riesgo general no esperado. Por favor, revise los datos ingresados o consulte con el equipo técnico.\n\n"
+            "El modelo ha generado un resultado de riesgo general no esperado o no se realizó predicción.\n\n"
         )
 
     # Interpretación de probabilidades
-    probabilidades = prediccion.get('probabilidades', {})
+    probabilidades = prediccion.get('probabilidades', {}) if prediccion else {}
     if probabilidades:
         clase_max = max(probabilidades, key=probabilidades.get)
         prob_max = probabilidades[clase_max]
@@ -111,24 +124,24 @@ def generar_reporte_pdf(proyecto, prediccion, filename="reporte_riesgo.pdf"):
         if otras:
             interpretacion += "Las otras probabilidades son: "
             interpretacion += ", ".join([f"{k}: {v*100:.1f}%" for k, v in otras]) + ".\n"
-    else:
+    elif prediccion:
         interpretacion += "No se encontraron probabilidades detalladas para interpretar.\n"
+    else:
+        interpretacion += "No se realizó predicción para este proyecto.\n"
 
     # Interpretación de sobrecosto y retraso si existen
-    prob_sobrecosto = prediccion.get('probabilidad_sobrecosto')
-    prob_retraso = prediccion.get('probabilidad_retraso')
+    prob_sobrecosto = prediccion.get('probabilidad_sobrecosto') if prediccion else None
+    prob_retraso = prediccion.get('probabilidad_retraso') if prediccion else None
     if prob_sobrecosto is not None:
         interpretacion += (f"\nProbabilidad de sobrecosto: {prob_sobrecosto*100:.1f}%. "
             + ("Un valor alto indica que el proyecto tiene una alta probabilidad de exceder el presupuesto estimado. Se recomienda revisar los costos, identificar posibles desviaciones y establecer controles financieros más estrictos."
                if prob_sobrecosto >= 0.5 else
-               "Un valor bajo indica que el proyecto tiene buenas perspectivas de mantenerse dentro del presupuesto, aunque siempre es recomendable monitorear los gastos.")
-        )
+               "Un valor bajo indica que el proyecto tiene buenas perspectivas de mantenerse dentro del presupuesto, aunque siempre es recomendable monitorear los gastos."))
     if prob_retraso is not None:
         interpretacion += (f"\nProbabilidad de retraso: {prob_retraso*100:.1f}%. "
             + ("Un valor alto sugiere que el proyecto podría no cumplir con los plazos establecidos. Se recomienda reforzar la planificación, monitorear los hitos y gestionar los recursos de manera eficiente."
                if prob_retraso >= 0.5 else
-               "Un valor bajo indica que el proyecto tiene buenas perspectivas de cumplir los plazos, pero es importante mantener un seguimiento constante del cronograma.")
-        )
+               "Un valor bajo indica que el proyecto tiene buenas perspectivas de cumplir los plazos, pero es importante mantener un seguimiento constante del cronograma."))
 
     # Explicación final
     interpretacion += ("\nEsta interpretación se basa únicamente en los resultados obtenidos y busca orientar la toma de decisiones. Recuerde que el reporte es una herramienta de apoyo y no reemplaza el juicio profesional del equipo gestor.")
