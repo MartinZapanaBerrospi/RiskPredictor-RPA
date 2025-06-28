@@ -192,7 +192,7 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
         resultado={resultadoRiesgo}
         proyecto={proyectoRiesgo}
       />
-      <div className="container">
+      <div className="container container-proyectos">
         <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%'}}>
           <h2>Proyectos en Ejecución</h2>
         </div>
