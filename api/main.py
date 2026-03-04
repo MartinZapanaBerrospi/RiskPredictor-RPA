@@ -12,10 +12,85 @@ import uuid
 import csv
 import subprocess
 import sys
+import sqlite3
 from utils.reporte_profesional import generar_reporte_pdf
 from utils.email_mailhog import enviar_reporte_mailhog
 
 app = FastAPI()
+
+# Inicialización de Base de Datos SQLite Persistente
+DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/riesgos.db'))
+
+def init_db():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        
+        # Tabla auditoria (Log automático oculto)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS auditoria_predicciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+                tipo_proyecto TEXT,
+                metodologia TEXT,
+                duracion_estimacion REAL,
+                presupuesto_estimado REAL,
+                numero_recursos REAL,
+                tecnologias TEXT,
+                complejidad TEXT,
+                experiencia_equipo REAL,
+                hitos_clave REAL,
+                riesgo_general TEXT,
+                probabilidad_sobrecosto REAL,
+                probabilidad_retraso REAL
+            )
+        ''')
+        
+        # Tabla proyectos_ejecucion (para Guardar Proyectos desde el Frontend)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS proyectos_ejecucion (
+                id TEXT PRIMARY KEY,
+                fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+                tipo_proyecto TEXT,
+                metodologia TEXT,
+                duracion_estimacion REAL,
+                presupuesto_estimado REAL,
+                numero_recursos REAL,
+                tecnologias TEXT,
+                complejidad TEXT,
+                experiencia_equipo REAL,
+                hitos_clave REAL,
+                costo_real REAL,
+                duracion_real REAL,
+                riesgo_general TEXT,
+                estado TEXT DEFAULT 'ejecucion'
+            )
+        ''')
+        conn.commit()
+
+init_db()
+
+def _save_audit_log(proyecto_dict: dict, prediction_result: dict):
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO auditoria_predicciones (
+                    tipo_proyecto, metodologia, duracion_estimacion, presupuesto_estimado, 
+                    numero_recursos, tecnologias, complejidad, experiencia_equipo, hitos_clave,
+                    riesgo_general, probabilidad_sobrecosto, probabilidad_retraso
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                proyecto_dict.get('tipo_proyecto'), proyecto_dict.get('metodologia'),
+                proyecto_dict.get('duracion_estimacion'), proyecto_dict.get('presupuesto_estimado'),
+                proyecto_dict.get('numero_recursos'), proyecto_dict.get('tecnologias'),
+                proyecto_dict.get('complejidad'), proyecto_dict.get('experiencia_equipo'),
+                proyecto_dict.get('hitos_clave'), prediction_result.get('riesgo_general'),
+                prediction_result.get('probabilidad_sobrecosto', 0), prediction_result.get('probabilidad_retraso', 0)
+            ))
+            conn.commit()
+    except Exception as e:
+        print(f"Error saving audit log: {e}")
 
 # Configuración CORS mejorada para permitir peticiones desde GitHub Pages (frontend) en producción
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
@@ -144,7 +219,9 @@ def read_root():
 
 @app.post('/predict')
 def predict_riesgo(proyecto: ProyectoInput):
-    return _predict_risk(proyecto.dict())
+    resultado = _predict_risk(proyecto.dict())
+    _save_audit_log(proyecto.dict(), resultado)
+    return resultado
 
 DATA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/opciones_formulario.json'))
 
@@ -160,104 +237,139 @@ def update_opciones_formulario(new_data: dict):
         json.dump(new_data, f, ensure_ascii=False, indent=2)
     return {"status": "ok"}
 
-PROY_EJEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/proyectos_ejecucion.csv'))
-
-PROY_EJEC_FIELDS = [
-    'id', 'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
-    'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave'
-]
-
 @app.post('/proyectos-ejecucion')
 def add_proyecto_ejecucion(proyecto: dict):
     proyecto_id = str(uuid.uuid4())
-    row = {'id': proyecto_id, **proyecto}
-    file_exists = os.path.exists(PROY_EJEC_PATH)
-    with open(PROY_EJEC_PATH, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=PROY_EJEC_FIELDS)
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow(row)
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO proyectos_ejecucion (
+                    id, tipo_proyecto, metodologia, duracion_estimacion, presupuesto_estimado,
+                    numero_recursos, tecnologias, complejidad, experiencia_equipo, hitos_clave
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                proyecto_id, proyecto.get('tipo_proyecto'), proyecto.get('metodologia'),
+                proyecto.get('duracion_estimacion'), proyecto.get('presupuesto_estimado'),
+                proyecto.get('numero_recursos'), proyecto.get('tecnologias'),
+                proyecto.get('complejidad'), proyecto.get('experiencia_equipo'),
+                proyecto.get('hitos_clave')
+            ))
+            conn.commit()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     return {"status": "ok", "id": proyecto_id}
 
 @app.get('/proyectos-ejecucion')
 def list_proyectos_ejecucion():
-    if not os.path.exists(PROY_EJEC_PATH):
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM proyectos_ejecucion")
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
         return []
-    with open(PROY_EJEC_PATH, encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        return list(reader)
 
 @app.get('/proyectos-ejecucion/{proy_id}')
 def get_proyecto_ejecucion(proy_id: str):
-    if not os.path.exists(PROY_EJEC_PATH):
-        raise HTTPException(status_code=404, detail='No hay proyectos en ejecución')
-    with open(PROY_EJEC_PATH, encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row['id'] == proy_id:
-                return row
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM proyectos_ejecucion WHERE id = ?", (proy_id,))
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+    except Exception:
+        pass
     raise HTTPException(status_code=404, detail='Proyecto no encontrado')
 
 @app.put('/proyectos-ejecucion/{proy_id}')
 def update_proyecto_ejecucion(proy_id: str, datos: dict):
-    if not os.path.exists(PROY_EJEC_PATH):
-        raise HTTPException(status_code=404, detail='No hay proyectos en ejecución')
-    proyectos = []
-    updated = False
-    with open(PROY_EJEC_PATH, encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row['id'] == proy_id:
-                row.update(datos)
-                updated = True
-            proyectos.append(row)
-    if not updated:
-        raise HTTPException(status_code=404, detail='Proyecto no encontrado')
-    with open(PROY_EJEC_PATH, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=PROY_EJEC_FIELDS)
-        writer.writeheader()
-        writer.writerows(proyectos)
-    return {"status": "ok"}
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            set_clause = ", ".join([f"{k} = ?" for k in datos.keys()])
+            values = list(datos.values())
+            values.append(proy_id)
+            
+            cursor.execute(f"UPDATE proyectos_ejecucion SET {set_clause} WHERE id = ?", values)
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail='Proyecto no encontrado')
+            conn.commit()
+            return {"status": "ok"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post('/proyectos-ejecucion/{proy_id}/finalizar')
 def finalizar_proyecto(proy_id: str, datos_finales: dict):
-    SYNTH_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/synthetic_data_with_outputs.csv'))
-    if not os.path.exists(PROY_EJEC_PATH):
-        raise HTTPException(status_code=404, detail='No hay proyectos en ejecución')
-    proyectos = []
-    finalizado = None
-    with open(PROY_EJEC_PATH, encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row['id'] == proy_id:
-                finalizado = {**row, **datos_finales}
-            else:
-                proyectos.append(row)
-    if not finalizado:
+    # Retrieve the project first
+    proyecto = None
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM proyectos_ejecucion WHERE id = ?", (proy_id,))
+            row = cursor.fetchone()
+            if row:
+                proyecto = dict(row)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error en base de datos")
+
+    if not proyecto:
         raise HTTPException(status_code=404, detail='Proyecto no encontrado')
-    with open(PROY_EJEC_PATH, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=PROY_EJEC_FIELDS)
-        writer.writeheader()
-        writer.writerows(proyectos)
+    
+    # Update SQLite state
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE proyectos_ejecucion 
+                SET costo_real = ?, duracion_real = ?, riesgo_general = ?, estado = 'finalizado'
+                WHERE id = ?
+            """, (
+                datos_finales.get('costo_real'), datos_finales.get('duracion_real'),
+                datos_finales.get('riesgo_general', proyecto.get('riesgo_general')), proy_id
+            ))
+            conn.commit()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error actualizando proyecto")
+    
+    # Retrocompatibilidad: Añadir a los CSVs para que el entrenamiento sintético original siga funcionando
+    finalizado = {**proyecto, **datos_finales}
+    SYNTH_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/synthetic_data_with_outputs.csv'))
     synth_fields = [
         'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
         'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
         'costo_real', 'duracion_real', 'riesgo_general'
     ]
     file_exists = os.path.exists(SYNTH_PATH)
-    with open(SYNTH_PATH, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=synth_fields)
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow({k: finalizado.get(k, '') for k in synth_fields})
+    try:
+        import csv
+        with open(SYNTH_PATH, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=synth_fields)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow({k: finalizado.get(k, '') for k in synth_fields})
+    except Exception:
+        pass # Fallback silent
+
     DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/dataset.csv'))
-    dataset_fields = synth_fields
     file_exists_dataset = os.path.exists(DATASET_PATH)
-    with open(DATASET_PATH, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=dataset_fields)
-        if not file_exists_dataset:
-            writer.writeheader()
-        writer.writerow({k: finalizado.get(k, '') for k in dataset_fields})
+    try:
+        import csv
+        with open(DATASET_PATH, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=synth_fields)
+            if not file_exists_dataset:
+                writer.writeheader()
+            writer.writerow({k: finalizado.get(k, '') for k in synth_fields})
+    except Exception:
+        pass
+
     return {"status": "ok"}
 
 @app.post('/reentrenar-modelo')

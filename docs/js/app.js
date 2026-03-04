@@ -1,3 +1,8 @@
+// Init Global Vars
+let currentProjectData = null;
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_URL = isLocalhost ? 'http://localhost:8000' : 'https://riskpredictor-rpa.onrender.com';
+
 // Init Technologies
 const techs = ["cloud", "big data", "IA", "IoT", "blockchain", "mobile", "web"];
 const container = document.getElementById('techContainer');
@@ -46,6 +51,8 @@ document.getElementById('predictionForm').addEventListener('submit', async (e) =
         hitos_clave: Number(document.getElementById('hitos_clave').value)
     };
 
+    currentProjectData = data;
+
     // Loading state
     const btn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
@@ -55,18 +62,18 @@ document.getElementById('predictionForm').addEventListener('submit', async (e) =
     btnText.style.display = 'none';
     loader.style.display = 'block';
 
-    // URL de la API (Render en producción, localhost en desarrollo)
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const API_URL = isLocalhost ? 'http://localhost:8000' : 'https://riskpredictor-rpa.onrender.com';
-
     try {
         const response = await fetch(`${API_URL}/predict`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify(data)
         });
         
-        if(!response.ok) throw new Error('API Error');
+        if(!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            console.error('Detalle error API:', response.status, errorData);
+            throw new Error('API Error');
+        }
         
         const result = await response.json();
         showResults(result, false);
@@ -129,6 +136,51 @@ function showResults(data, isSimulated) {
     
     // Warning visibilty
     document.getElementById('apiWarning').style.display = isSimulated ? 'block' : 'none';
+
+    // Configuración Botón Guardar en BD SQLite
+    const btnSave = document.getElementById('btnSave');
+    const saveMsg = document.getElementById('saveMsg');
+    
+    if (!isSimulated) {
+        btnSave.style.display = 'inline-block';
+        btnSave.disabled = false;
+        btnSave.querySelector('#btnSaveText').textContent = 'Guardar Evaluación en Base de Datos';
+        saveMsg.style.display = 'none';
+        
+        // Evitar multiples listeners limpiando el nodo
+        const newBtnSave = btnSave.cloneNode(true);
+        btnSave.parentNode.replaceChild(newBtnSave, btnSave);
+        
+        newBtnSave.addEventListener('click', async () => {
+            if(!currentProjectData) return;
+            newBtnSave.disabled = true;
+            newBtnSave.querySelector('#btnSaveText').textContent = 'Guardando...';
+            try {
+                const response = await fetch(`${API_URL}/proyectos-ejecucion`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(currentProjectData)
+                });
+                if(response.ok) {
+                    saveMsg.style.display = 'block';
+                    saveMsg.textContent = '¡Proyecto guardado exitosamente en SQLite!';
+                    saveMsg.style.color = 'var(--accent-emerald)';
+                    newBtnSave.style.display = 'none';
+                } else {
+                    throw new Error('Save Error');
+                }
+            } catch (e) {
+                newBtnSave.disabled = false;
+                newBtnSave.querySelector('#btnSaveText').textContent = 'Reintentar Guardado';
+                saveMsg.style.display = 'block';
+                saveMsg.textContent = 'Error de conexión. Intenta de nuevo.';
+                saveMsg.style.color = 'var(--accent-rose)';
+            }
+        });
+    } else {
+        btnSave.style.display = 'none';
+        saveMsg.style.display = 'none';
+    }
 
     // Animate bars
     setTimeout(() => {

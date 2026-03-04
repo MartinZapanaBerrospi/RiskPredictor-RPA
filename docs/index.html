@@ -145,6 +145,13 @@
                 <div class="api-warning" id="apiWarning" style="display: none;">
                     <strong>Modo Demostración:</strong> Estás interactuando con una versión estática del frontend (alojado en GitHub Pages, el cual no ejecuta código Python). Los resultados mostrados aquí son simulados con fines evaluativos y demostrativos. Para resultados reales, ejecuta el proyecto localmente.
                 </div>
+                
+                <div class="modal-actions" style="margin-top: 25px; text-align: center;">
+                    <button id="btnSave" class="btn" style="background: var(--accent-emerald); display: none;">
+                        <span id="btnSaveText">Guardar Evaluación en Base de Datos</span>
+                    </button>
+                    <div id="saveMsg" style="margin-top: 10px; font-size: 0.9em; color: var(--text-light); display: none;">¡Proyecto guardado exitosamente en SQLite!</div>
+                </div>
             </div>
         </div>
     </div>
