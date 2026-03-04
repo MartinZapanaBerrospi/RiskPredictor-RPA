@@ -51,13 +51,13 @@ le_riesgo = joblib.load('models/le_riesgo_general.pkl')
 class ProyectoInput(BaseModel):
     tipo_proyecto: str
     metodologia: str
-    duracion_estimacion: int
-    presupuesto_estimado: int
-    numero_recursos: int
+    duracion_estimacion: float
+    presupuesto_estimado: float
+    numero_recursos: float
     tecnologias: str  # Coma separada
     complejidad: str
-    experiencia_equipo: int
-    hitos_clave: int
+    experiencia_equipo: float
+    hitos_clave: float
 
 class EnvioReporteRequest(BaseModel):
     destinatario: str
