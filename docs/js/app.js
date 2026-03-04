@@ -56,21 +56,30 @@ document.getElementById('predictionForm').addEventListener('submit', async (e) =
     loader.style.display = 'block';
 
     try {
-        // Try to connect to localhost API if running
-        const response = await fetch('http://localhost:8000/predict', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
+        // Solo intentar conectar al backend si estamos en localhost
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
-        if(!response.ok) throw new Error('API Error');
-        
-        const result = await response.json();
-        showResults(result, false);
+        if (isLocalhost) {
+            const response = await fetch('http://localhost:8000/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if(!response.ok) throw new Error('API Error');
+            
+            const result = await response.json();
+            showResults(result, false);
+        } else {
+            // Entorno de GitHub Pages: saltar directamente a la simulación sin intentar fetch localhost
+            throw new Error('Entorno estático');
+        }
 
     } catch (error) {
         // Fallback / Simulated calculation logic for static GitHub Pages hosting
-        console.log('Backend no disponible. Generando resultado simulado...');
+        if (isLocalhost) {
+            console.log('Backend no disponible. Generando resultado simulado...');
+        }
         
         // Extremely simple simulated risk calculation based on inputs just for demo purposes
         let baseRisk = 0.5;
