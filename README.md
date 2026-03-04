@@ -82,9 +82,20 @@ El sistema sigue una arquitectura **cliente-servidor** con tres capas principale
 
 1. El **usuario** interactúa con el formulario del frontend ingresando las características del proyecto
 2. El **frontend** envía los datos al backend mediante HTTP POST
-3. La **API** procesa los datos con los encoders (LabelEncoder, MultiLabelBinarizer) y ejecuta la predicción
-4. Los **modelos XGBoost** retornan probabilidades de riesgo general, sobrecosto y retraso
-5. Los resultados se presentan al usuario y opcionalmente se generan reportes PDF
+3. El sistema permite a los usuarios exportar evaluaciones de riesgo en formato PDF. Estos reportes incluyen:
+
+- Resumen ejecutivo del proyecto.
+- Evaluación general de riesgo (Alto, Medio, Bajo).
+- Probabilidades detalladas para sobrecosto y retraso.
+- Gráficos de distribución de probabilidades generados con `matplotlib`.
+
+### Arquitectura de Datos (Migración a SQLite)
+
+Para garantizar la integridad y persistencia de las evaluaciones (especialmente en entornos de despliegue en la nube como Render), el proyecto almacena sus registros en una base de datos relacional nativa en SQLite (`data/riesgos.db`).
+
+- **Log de Auditoría Automatizado:** Cada vez que el modelo genera una predicción exitosa a través de la API, el backend captura de forma automática todos los parámetros ingresados en una tabla oculta llamada `auditoria_predicciones`.
+- **Registro de Proyectos:** Los usuarios pueden utilizar el botón **"Guardar Evaluación"** en la interfaz para hacer seguimiento manual del proyecto, insertándolo en la tabla `proyectos_ejecucion`. Esta data alimenta al proyecto cuando culmina para mejorar el modelo empíricamente.
+- _Nota:_ Archivos CSV heredados (`dataset.csv`) se siguen exportando/manteniendo a la par únicamente para el pipeline de reentrenamiento artificial inicial con `train_xgboost.py`.
 
 ---
 
