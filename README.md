@@ -89,14 +89,18 @@ El sistema sigue una arquitectura **cliente-servidor** con tres capas principale
 - Probabilidades detalladas para sobrecosto y retraso.
 - Gráficos de distribución de probabilidades generados con `matplotlib`.
 
-### Arquitectura de Datos (Supabase PostgreSQL)
+### Ciclo de Vida de los Datos: Supabase y Reentrenamiento
 
-Para garantizar la integridad y persistencia de las evaluaciones en la nube, el proyecto almacena sus registros en una base de datos relacional PostgreSQL profesional alojada en **Supabase**.
+Para garantizar la integridad corporativa y la escalabilidad, el sistema divide su almacenamiento en dos estrategias:
 
-- **Log de Auditoría Automatizado:** Cada vez que el modelo genera una predicción exitosa a través de la API, el backend captura de forma automática todos los parámetros ingresados en una tabla oculta nativa de Postgres llamada `auditoria_predicciones`.
-- **Registro de Proyectos:** Los usuarios pueden utilizar el botón **"Guardar Evaluación"** en la interfaz para hacer seguimiento manual del proyecto, insertándolo en la tabla `proyectos_ejecucion`. Esta data alimenta al proyecto cuando culmina para mejorar el modelo empíricamente.
-- _Nota:_ Para conectar la base de datos debes proveer la clave `DATABASE_URL` mediante un archivo `.env` o en las variables de entorno de tu servidor de producción (revisar `.env.example`).
-- _Legado:_ Archivos CSV heredados (`dataset.csv`) se siguen exportando/manteniendo a la par únicamente para el pipeline de reentrenamiento artificial inicial con `train_xgboost.py`.
+1. **Almacenamiento en la Nube (Supabase PostgreSQL):** Es el repositorio central de producción.
+   - **Log de Auditoría Automatizado (`auditoria_predicciones`):** El backend captura de forma invisible el 100% de los parámetros ingresados en una predicción exitosa. Es una bitácora de uso inmanejable por el usuario final.
+   - **Registro de Proyectos (`proyectos_ejecucion`):** Almacena únicamente las evaluaciones en las que el usuario hace clic en el botón **"Guardar Evaluación"**. Permite a los gestores dar seguimiento (CRUD) al proyecto a lo largo del tiempo hasta que éste finaliza y se revelan sus métricas reales.
+   - _Nota:_ Requiere configurar la variable `DATABASE_URL` (ver `.env.example`).
+
+2. **CSVs Estáticos (Módulo de Machine Learning):**
+   - Los archivos `.csv` en la carpeta `data/` (como `dataset.csv`) conforman la base de conocimiento histórico que la Inteligencia Artificial utilizó para entrenarse originalmente (datos balanceados sintéticamente).
+   - **Flujo de Mejora Continua:** En el estado de producción, el sistema web **ya no inyecta datos directamente a estos CSVs**. En su lugar, cuando exista un volumen considerable de proyectos "Finalizados" en Supabase, el administrador de datos debe extraer dicha información, agregarla al `dataset.csv` local y ejecutar manualmente el pipeline de reentrenamiento (`python models/train_xgboost.py`). Este proceso permite que el algoritmo evolucione y adapta sus predicciones a la realidad operativa de la organización.
 
 ---
 
