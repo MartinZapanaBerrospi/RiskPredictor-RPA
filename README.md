@@ -359,19 +359,26 @@ cd RiskPredictor-RPA
 ### 2. Backend (API FastAPI)
 
 ```bash
-# Instalar dependencias de Python
+# 1. Crear entorno virtual (Recomendado)
+python -m venv venv
+
+# 2. Activar el entorno virtual
+# En Windows (Git Bash) o Linux/Mac:
+source venv/Scripts/activate  # Alternativa CMD: venv\Scripts\activate
+
+# 3. Instalar dependencias de Python
 pip install -r requirements.txt
 
-# (Opcional) Generar datos sintéticos
+# 4. (Opcional) Generar datos sintéticos
 python data/generate_synthetic_data.py
 
-# Preparar dataset para entrenamiento
+# 5. Preparar dataset para entrenamiento
 python data/preparacion.py
 
-# Entrenar los modelos
+# 6. Entrenar los modelos
 python models/train_xgboost.py
 
-# Iniciar la API
+# 7. Iniciar la API
 uvicorn api.main:app --reload
 ```
 
