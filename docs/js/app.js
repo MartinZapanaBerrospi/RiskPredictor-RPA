@@ -57,7 +57,7 @@ document.getElementById('predictionForm').addEventListener('submit', async (e) =
 
     // URL de la API (Render en producción, localhost en desarrollo)
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const API_URL = isLocalhost ? 'http://localhost:8000' : 'https://riskpredictor-api.onrender.com';
+    const API_URL = isLocalhost ? 'http://localhost:8000' : 'https://riskpredictor-rpa.onrender.com';
 
     try {
         const response = await fetch(`${API_URL}/predict`, {
