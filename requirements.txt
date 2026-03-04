@@ -6,3 +6,4 @@ pandas
 joblib
 numpy
 fpdf2
+gunicorn

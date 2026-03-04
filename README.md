@@ -400,7 +400,18 @@ npm run dev
 
 > El frontend estará disponible en `http://localhost:5173`
 
-### 4. (Opcional) MailHog para emails
+### 4. Despliegue en Producción (Backend API)
+
+El proyecto está pre-configurado para un despliegue gratuito y directo en **[Render](https://render.com/)**, para que el Frontend estático en GitHub Pages pueda conectarse a una API real.
+
+1. Crea una cuenta en Render conectada a tu GitHub.
+2. Crea un nuevo **"Web Service"** y conecta este repositorio.
+3. Render detectará automáticamente la configuración usando el archivo `render.yaml` incluido en el proyecto.
+4. Render instalará el entorno y lanzará la API automáticamente usando `gunicorn` (gracias al blueprint de Render).
+
+> **Nota:** La URL pública que te asigne Render (ej. `https://tu-api.onrender.com`) será el nuevo endpoint al que el Frontend enviará las predicciones. Este proyecto ya viene reconfigurado con los permisos de CORS necesarios.
+
+### 5. (Opcional) MailHog para emails
 
 Para la funcionalidad de envío de reportes por email, instalar y ejecutar [MailHog](https://github.com/mailhog/MailHog):
 

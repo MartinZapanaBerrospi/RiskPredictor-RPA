@@ -55,25 +55,21 @@ document.getElementById('predictionForm').addEventListener('submit', async (e) =
     btnText.style.display = 'none';
     loader.style.display = 'block';
 
-    // Determinar si corre local para fetch al backend o si está en github pages
+    // URL de la API (Render en producción, localhost en desarrollo)
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const API_URL = isLocalhost ? 'http://localhost:8000' : 'https://riskpredictor-api.onrender.com';
 
     try {
-        if (isLocalhost) {
-            const response = await fetch('http://localhost:8000/predict', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            
-            if(!response.ok) throw new Error('API Error');
-            
-            const result = await response.json();
-            showResults(result, false);
-        } else {
-            // Entorno de GitHub Pages: saltar directamente a la simulación sin intentar fetch localhost
-            throw new Error('Entorno estático');
-        }
+        const response = await fetch(`${API_URL}/predict`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if(!response.ok) throw new Error('API Error');
+        
+        const result = await response.json();
+        showResults(result, false);
 
     } catch (error) {
         // Fallback / Simulated calculation logic for static GitHub Pages hosting

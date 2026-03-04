@@ -17,6 +17,26 @@ from utils.email_mailhog import enviar_reporte_mailhog
 
 app = FastAPI()
 
+# Configuración CORS mejorada para permitir peticiones desde GitHub Pages (frontend) en producción
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+origins = [
+    "http://localhost:5173",  # React Vite Frontend (Desarrollo local)
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "https://martinzapanaberrospi.github.io" # Frontend de Producción
+]
+
+if frontend_url not in origins:
+    origins.append(frontend_url)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Cargar modelos y encoders
 model = joblib.load('models/modelo_xgb_riesgo_general.pkl')
 sobrecosto_model = joblib.load('models/modelo_xgb_sobrecosto.pkl')
