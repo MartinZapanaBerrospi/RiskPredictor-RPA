@@ -30,7 +30,13 @@ DB_URL = os.getenv("DATABASE_URL")
 def get_db_connection():
     if not DB_URL:
         raise Exception("DATABASE_URL no está configurada")
-    return psycopg2.connect(DB_URL)
+    
+    # Supabase requiere conexiones seguras por defecto
+    url = DB_URL
+    if 'sslmode=' not in url:
+        url += '?sslmode=require' if '?' not in url else '&sslmode=require'
+        
+    return psycopg2.connect(url)
 
 def init_db():
     if not DB_URL:
