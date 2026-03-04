@@ -137,15 +137,22 @@ function showResults(data, isSimulated) {
     // Warning visibilty
     document.getElementById('apiWarning').style.display = isSimulated ? 'block' : 'none';
 
-    // Configuración Botón Guardar en BD SQLite
+    // Configuración Botón Guardar en BD Supabase
     const btnSave = document.getElementById('btnSave');
     const saveMsg = document.getElementById('saveMsg');
+    
+    // Configuración Botón Reporte PDF
+    const btnDownloadPDF = document.getElementById('btnDownloadPDF');
     
     if (!isSimulated) {
         btnSave.style.display = 'inline-block';
         btnSave.disabled = false;
         btnSave.querySelector('#btnSaveText').textContent = 'Guardar Evaluación en Base de Datos';
         saveMsg.style.display = 'none';
+        
+        btnDownloadPDF.style.display = 'inline-block';
+        btnDownloadPDF.disabled = false;
+        btnDownloadPDF.querySelector('#btnDownloadPDFText').textContent = '📄 Descargar Reporte PDF';
         
         // Evitar multiples listeners limpiando el nodo
         const newBtnSave = btnSave.cloneNode(true);
@@ -163,7 +170,7 @@ function showResults(data, isSimulated) {
                 });
                 if(response.ok) {
                     saveMsg.style.display = 'block';
-                    saveMsg.textContent = '¡Proyecto guardado exitosamente en SQLite!';
+                    saveMsg.textContent = '¡Proyecto guardado exitosamente en Supabase!';
                     saveMsg.style.color = 'var(--accent-emerald)';
                     newBtnSave.style.display = 'none';
                 } else {
@@ -177,6 +184,47 @@ function showResults(data, isSimulated) {
                 saveMsg.style.color = 'var(--accent-rose)';
             }
         });
+        
+        // Listener para Descargar PDF
+        const newBtnDownloadPDF = btnDownloadPDF.cloneNode(true);
+        btnDownloadPDF.parentNode.replaceChild(newBtnDownloadPDF, btnDownloadPDF);
+        
+        newBtnDownloadPDF.addEventListener('click', async () => {
+            if(!currentProjectData) return;
+            newBtnDownloadPDF.disabled = true;
+            newBtnDownloadPDF.querySelector('#btnDownloadPDFText').textContent = 'Generando...';
+            try {
+                const response = await fetch(`${API_URL}/generar-reporte`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(currentProjectData)
+                });
+                
+                if(response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `Reporte_Riesgo_${currentProjectData.tipo_proyecto.replace(/\s+/g, '_')}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    
+                    newBtnDownloadPDF.querySelector('#btnDownloadPDFText').textContent = '✔ PDF Descargado';
+                    setTimeout(() => {
+                        newBtnDownloadPDF.disabled = false;
+                        newBtnDownloadPDF.querySelector('#btnDownloadPDFText').textContent = '📄 Descargar Reporte PDF';
+                    }, 3000);
+                } else {
+                    throw new Error('PDF Error');
+                }
+            } catch (e) {
+                newBtnDownloadPDF.disabled = false;
+                newBtnDownloadPDF.querySelector('#btnDownloadPDFText').textContent = 'Error. Reintentar';
+            }
+        });
+        
     } else {
         btnSave.style.display = 'none';
         saveMsg.style.display = 'none';
