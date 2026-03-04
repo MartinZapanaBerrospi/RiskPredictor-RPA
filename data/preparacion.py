@@ -18,6 +18,7 @@ campos_extra = ['sobrecosto', 'retraso', 'puntos_riesgo', 'riesgo_general']
 # Solo agregar los campos extra si existen en el archivo
 campos_final = campos_base + [c for c in campos_extra if c in df.columns]
 
-df[campos_final].to_csv('dataset.csv', index=False)
+OUTPUT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'dataset.csv'))
+df[campos_final].to_csv(OUTPUT_PATH, index=False)
 
 print('Archivo dataset.csv generado con todos los campos originales y los calculados.')

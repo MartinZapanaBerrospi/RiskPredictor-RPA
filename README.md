@@ -1,5 +1,9 @@
 # RiskPredictor-RPA: Predicción y Gestión de Riesgos en Proyectos TI
 
+[![GitHub Pages](https://img.shields.io/badge/📖_Documentación-GitHub_Pages-blue?style=for-the-badge)](https://martinzapanaberrospi.github.io/RiskPredictor-RPA/)
+
+> 📖 **[Ver documentación completa →](https://martinzapanaberrospi.github.io/RiskPredictor-RPA/)**
+
 Este proyecto implementa un sistema completo para la predicción y gestión de riesgos en proyectos de tecnología, combinando Machine Learning, una API REST (FastAPI) y un frontend moderno en React.
 
 ## Arquitectura del Proyecto
@@ -40,41 +44,36 @@ El sistema está compuesto por los siguientes módulos principales:
    └── Lee/Escribe archivos CSV/JSON en /data
 ```
 
-- El usuario interactúa con el frontend React.
-- El frontend consume la API para predicción, gestión de proyectos y reentrenamiento.
-- La API utiliza modelos ML y scripts Python para procesar los datos y responder.
-- Los datos y modelos se almacenan en archivos dentro de las carpetas `/data` y `/models`.
-
 ## Estructura del proyecto
 
 ```
 RiskPredictor-RPA/
 │
-├── data/                # Datasets sintéticos, opciones de formulario y proyectos en ejecución
-│   ├── synthetic_data_with_outputs.csv
-│   ├── opciones_formulario.json
-│   └── proyectos_ejecucion.csv
+├── api/                 # API REST con FastAPI
+│   └── main.py          # Endpoints, predicción, reportes
 │
-├── models/              # Modelos entrenados y scripts de entrenamiento
+├── data/                # Datos y scripts de generación
+│   ├── generate_synthetic_data.py
+│   ├── preparacion.py
+│   └── opciones_formulario.json
+│
+├── models/              # Entrenamiento de modelos ML
 │   ├── train_xgboost.py
-│   ├── modelo_xgb_riesgo_general.pkl
-│   ├── modelo_xgb_sobrecosto.pkl
-│   ├── modelo_xgb_retraso.pkl
-│   └── encoders (archivos .pkl de LabelEncoder y MultiLabelBinarizer)
+│   └── prueba_comparacion_modelos.py
 │
-├── api/                 # Código de la API predictiva (FastAPI)
-│   └── main.py
+├── frontend/            # Aplicación React + TypeScript
+│   └── src/
+│       ├── App.tsx
+│       ├── ProyectosEjecucion.tsx
+│       ├── Modal*.tsx
+│       └── App.css
 │
-├── frontend/            # Aplicación React para la interacción de usuario
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── ProyectosEjecucion.tsx
-│   │   └── App.css
-│   └── ...
+├── utils/               # Utilidades del backend
+│   ├── reporte_profesional.py
+│   └── email_mailhog.py
 │
-├── reports/             # (Opcional) Reportes generados automáticamente
-│
-├── utils/               # Utilidades y funciones auxiliares
+├── docs/                # Documentación (GitHub Pages)
+│   └── index.html
 │
 ├── requirements.txt     # Dependencias del backend (Python)
 ├── README.md            # Descripción y guía del proyecto
@@ -82,6 +81,7 @@ RiskPredictor-RPA/
 ```
 
 ## Requisitos
+
 - Python 3.8+
 - Node.js 18+
 - pip
@@ -124,20 +124,15 @@ RiskPredictor-RPA/
    ```
    Accede a la interfaz en [http://localhost:5173](http://localhost:5173)
 
-## ¿Qué incluye cada carpeta?
-- **data/**: Datasets sintéticos, opciones de formulario y proyectos en ejecución (archivos CSV y JSON).
-- **models/**: Scripts de entrenamiento y modelos/encoders entrenados (archivos .pkl).
-- **api/**: Código de la API REST (FastAPI) que expone endpoints para predicción, gestión de proyectos y reentrenamiento.
-- **frontend/**: Aplicación React con formularios dinámicos, listado de proyectos en ejecución y visualización de resultados.
-- **reports/**: (Opcional) Reportes generados automáticamente.
-- **utils/**: Funciones auxiliares para preprocesamiento y utilidades.
-
 ## Funcionalidades principales
+
 - Predicción de riesgo general, sobrecosto y retraso para proyectos TI.
 - Gestión de proyectos en ejecución y finalización desde el frontend.
 - Reentrenamiento de modelos desde la interfaz.
+- Generación de reportes PDF profesionales.
+- Envío de reportes por email.
 - API REST documentada y lista para integración.
 
 ## Créditos
-Desarrollado por Grupo 7 - RPA para la Gestión de Riesgos en Proyectos de Tecnología.
 
+Desarrollado por Grupo 7 - RPA para la Gestión de Riesgos en Proyectos de Tecnología.

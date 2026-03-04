@@ -17,9 +17,6 @@ from utils.email_mailhog import enviar_reporte_mailhog
 
 app = FastAPI()
 
-# Load model (update path as needed)
-# model = joblib.load('../models/model.pkl')
-
 # Cargar modelos y encoders
 model = joblib.load('models/modelo_xgb_riesgo_general.pkl')
 sobrecosto_model = joblib.load('models/modelo_xgb_sobrecosto.pkl')
@@ -49,19 +46,19 @@ class EnvioReporteRequest(BaseModel):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Puedes restringir a ["http://localhost:5173"] si solo usas Vite
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get('/')
-def read_root():
-    return {"message": "Risk Predictor API"}
 
-@app.post('/predict')
-def predict_riesgo(proyecto: ProyectoInput):
-    X_pred = pd.DataFrame([proyecto.dict()])
+# ---------------------------------------------------------------------------
+# Helper: ejecuta la lógica de predicción sobre un dict de proyecto
+# ---------------------------------------------------------------------------
+def _predict_risk(proyecto_dict: dict) -> dict:
+    """Recibe un dict con los campos del proyecto y devuelve la predicción."""
+    X_pred = pd.DataFrame([proyecto_dict])
     X_pred['tipo_proyecto_enc'] = le_tipo.transform(X_pred['tipo_proyecto'])
     X_pred['metodologia_enc'] = le_metodologia.transform(X_pred['metodologia'])
     X_pred['complejidad_enc'] = le_complejidad.transform(X_pred['complejidad'])
@@ -91,6 +88,44 @@ def predict_riesgo(proyecto: ProyectoInput):
         "probabilidad_retraso": float(retraso_proba)
     }
 
+
+def _proyecto_to_display_dict(proyecto_dict: dict) -> dict:
+    """Convierte un dict de proyecto a un dict con claves legibles para el reporte PDF."""
+    return {
+        "Tipo de proyecto": proyecto_dict.get("tipo_proyecto", ""),
+        "Metodología": proyecto_dict.get("metodologia", ""),
+        "Duración estimada (meses)": proyecto_dict.get("duracion_estimacion", ""),
+        "Presupuesto estimado (USD)": proyecto_dict.get("presupuesto_estimado", ""),
+        "Número de recursos": proyecto_dict.get("numero_recursos", ""),
+        "Tecnologías": proyecto_dict.get("tecnologias", ""),
+        "Complejidad": proyecto_dict.get("complejidad", ""),
+        "Experiencia del equipo": proyecto_dict.get("experiencia_equipo", ""),
+        "Hitos clave": proyecto_dict.get("hitos_clave", "")
+    }
+
+
+def _prediccion_to_report_dict(prediccion: dict) -> dict:
+    """Normaliza un dict de predicción al formato esperado por el reporte PDF."""
+    return {
+        "riesgo_general": prediccion.get("riesgo_general", ""),
+        "probabilidades": prediccion.get("probabilidades_riesgo") or prediccion.get("probabilidades", {}),
+        "probabilidad_sobrecosto": prediccion.get("probabilidad_sobrecosto", 0),
+        "probabilidad_retraso": prediccion.get("probabilidad_retraso", 0)
+    }
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
+
+@app.get('/')
+def read_root():
+    return {"message": "Risk Predictor API"}
+
+@app.post('/predict')
+def predict_riesgo(proyecto: ProyectoInput):
+    return _predict_risk(proyecto.dict())
+
 DATA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/opciones_formulario.json'))
 
 @app.get('/opciones-formulario')
@@ -107,7 +142,6 @@ def update_opciones_formulario(new_data: dict):
 
 PROY_EJEC_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/proyectos_ejecucion.csv'))
 
-# Helper: get fieldnames for proyectos en ejecución
 PROY_EJEC_FIELDS = [
     'id', 'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave'
@@ -115,10 +149,8 @@ PROY_EJEC_FIELDS = [
 
 @app.post('/proyectos-ejecucion')
 def add_proyecto_ejecucion(proyecto: dict):
-    # Generar un id único
     proyecto_id = str(uuid.uuid4())
     row = {'id': proyecto_id, **proyecto}
-    # Escribir en el CSV (append)
     file_exists = os.path.exists(PROY_EJEC_PATH)
     with open(PROY_EJEC_PATH, 'a', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=PROY_EJEC_FIELDS)
@@ -169,9 +201,7 @@ def update_proyecto_ejecucion(proy_id: str, datos: dict):
 
 @app.post('/proyectos-ejecucion/{proy_id}/finalizar')
 def finalizar_proyecto(proy_id: str, datos_finales: dict):
-    # Mover a synthetic_data_with_outputs.csv
     SYNTH_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/synthetic_data_with_outputs.csv'))
-    # Leer proyectos en ejecución
     if not os.path.exists(PROY_EJEC_PATH):
         raise HTTPException(status_code=404, detail='No hay proyectos en ejecución')
     proyectos = []
@@ -185,12 +215,10 @@ def finalizar_proyecto(proy_id: str, datos_finales: dict):
                 proyectos.append(row)
     if not finalizado:
         raise HTTPException(status_code=404, detail='Proyecto no encontrado')
-    # Guardar el resto de proyectos en ejecución
     with open(PROY_EJEC_PATH, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=PROY_EJEC_FIELDS)
         writer.writeheader()
         writer.writerows(proyectos)
-    # Agregar a synthetic_data_with_outputs.csv
     synth_fields = [
         'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
         'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
@@ -202,9 +230,8 @@ def finalizar_proyecto(proy_id: str, datos_finales: dict):
         if not file_exists:
             writer.writeheader()
         writer.writerow({k: finalizado.get(k, '') for k in synth_fields})
-    # Agregar también a dataset.csv
     DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/dataset.csv'))
-    dataset_fields = synth_fields  # Puedes ajustar si dataset.csv tiene más campos
+    dataset_fields = synth_fields
     file_exists_dataset = os.path.exists(DATASET_PATH)
     with open(DATASET_PATH, 'a', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=dataset_fields)
@@ -215,15 +242,12 @@ def finalizar_proyecto(proy_id: str, datos_finales: dict):
 
 @app.post('/reentrenar-modelo')
 def reentrenar_modelo(background_tasks: BackgroundTasks):
-    """
-    Ejecuta el script de entrenamiento de modelos y devuelve el estado y la salida.
-    """
+    """Ejecuta el script de entrenamiento y recarga los modelos en memoria."""
     script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models/train_xgboost.py'))
-    python_exe = sys.executable  # Usar el mismo Python del backend
+    python_exe = sys.executable
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     try:
         result = subprocess.run([python_exe, script_path], capture_output=True, text=True, check=True, cwd=project_root)
-        # Recargar modelos y encoders
         global model, sobrecosto_model, retraso_model, le_tipo, le_metodologia, le_complejidad, le_experiencia, mlb, le_riesgo
         model = joblib.load('models/modelo_xgb_riesgo_general.pkl')
         sobrecosto_model = joblib.load('models/modelo_xgb_sobrecosto.pkl')
@@ -240,154 +264,29 @@ def reentrenar_modelo(background_tasks: BackgroundTasks):
 
 @app.post('/generar-reporte')
 def generar_reporte(proyecto: ProyectoInput):
-    # Predecir riesgo igual que en /predict
-    X_pred = pd.DataFrame([proyecto.dict()])
-    X_pred['tipo_proyecto_enc'] = le_tipo.transform(X_pred['tipo_proyecto'])
-    X_pred['metodologia_enc'] = le_metodologia.transform(X_pred['metodologia'])
-    X_pred['complejidad_enc'] = le_complejidad.transform(X_pred['complejidad'])
-    X_pred['experiencia_equipo_enc'] = X_pred['experiencia_equipo']
-    tec_matrix = mlb.transform([X_pred.loc[0, 'tecnologias'].split(',')])
-    tec_df = pd.DataFrame(tec_matrix, columns=[f'tec_{t}' for t in mlb.classes_])
-    for col in tec_df.columns:
-        X_pred[col] = tec_df[col].values
-    features = [
-        'tipo_proyecto_enc', 'metodologia_enc', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
-        'complejidad_enc', 'experiencia_equipo_enc', 'hitos_clave'
-    ] + list(tec_df.columns)
-    for col in features:
-        if col not in X_pred:
-            X_pred[col] = 0
-    X_pred = X_pred[features]
-    pred = model.predict(X_pred)[0]
-    pred_label = le_riesgo.inverse_transform([pred])[0]
-    pred_proba = model.predict_proba(X_pred)[0]
-    sobrecosto_proba = sobrecosto_model.predict_proba(X_pred)[0][1]
-    retraso_proba = retraso_model.predict_proba(X_pred)[0][1]
-    # Preparar datos para el reporte
-    proyecto_dict = {
-        "Tipo de proyecto": proyecto.tipo_proyecto,
-        "Metodología": proyecto.metodologia,
-        "Duración estimada (meses)": proyecto.duracion_estimacion,
-        "Presupuesto estimado (USD)": proyecto.presupuesto_estimado,
-        "Número de recursos": proyecto.numero_recursos,
-        "Tecnologías": proyecto.tecnologias,
-        "Complejidad": proyecto.complejidad,
-        "Experiencia del equipo": proyecto.experiencia_equipo,
-        "Hitos clave": proyecto.hitos_clave
-    }
-    prediccion_dict = {
-        "riesgo_general": pred_label,
-        "probabilidades": {clase: float(proba) for clase, proba in zip(le_riesgo.classes_, pred_proba)},
-        "probabilidad_sobrecosto": float(sobrecosto_proba),
-        "probabilidad_retraso": float(retraso_proba)
-    }
-    # Generar PDF temporal
+    prediccion = _predict_risk(proyecto.dict())
+    proyecto_dict = _proyecto_to_display_dict(proyecto.dict())
+    prediccion_dict = _prediccion_to_report_dict(prediccion)
     pdf_path = f"reporte_riesgo_{uuid.uuid4().hex}.pdf"
     generar_reporte_pdf(proyecto_dict, prediccion_dict, filename=pdf_path)
-    # Devolver el PDF como descarga
     return FileResponse(pdf_path, media_type='application/pdf', filename='reporte_riesgo.pdf')
 
 @app.post('/enviar-reporte-mailhog')
 def enviar_reporte_mailhog_endpoint(request: EnvioReporteRequest):
-    """
-    Genera el PDF y lo envía por email usando MailHog (localhost:1025).
-    El PDF será idéntico al de descarga, con predicción si es posible.
-    """
-    import uuid
-    import os
-    from utils.reporte_profesional import generar_reporte_pdf
-    # Si no hay predicción, la calculamos igual que en /generar-reporte
+    """Genera el PDF y lo envía por email usando MailHog (localhost:1025)."""
     prediccion = request.prediccion
-    # Si la predicción viene sin probabilidades, las calculamos igual que en /generar-reporte
-    if prediccion and (not prediccion.get('probabilidades') or not isinstance(prediccion.get('probabilidades'), dict) or len(prediccion.get('probabilidades')) == 0) and request.proyecto:
-        class Dummy:
-            def __init__(self, d):
-                self.__dict__ = d
-            def dict(self):
-                return self.__dict__
-        proyecto_obj = Dummy(request.proyecto)
-        X_pred = pd.DataFrame([proyecto_obj.dict()])
-        X_pred['tipo_proyecto_enc'] = le_tipo.transform(X_pred['tipo_proyecto'])
-        X_pred['metodologia_enc'] = le_metodologia.transform(X_pred['metodologia'])
-        X_pred['complejidad_enc'] = le_complejidad.transform(X_pred['complejidad'])
-        X_pred['experiencia_equipo_enc'] = X_pred['experiencia_equipo']
-        tec_matrix = mlb.transform([X_pred.loc[0, 'tecnologias'].split(',')])
-        tec_df = pd.DataFrame(tec_matrix, columns=[f'tec_{t}' for t in mlb.classes_])
-        for col in tec_df.columns:
-            X_pred[col] = tec_df[col].values
-        features = [
-            'tipo_proyecto_enc', 'metodologia_enc', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
-            'complejidad_enc', 'experiencia_equipo_enc', 'hitos_clave'
-        ] + list(tec_df.columns)
-        for col in features:
-            if col not in X_pred:
-                X_pred[col] = 0
-        X_pred = X_pred[features]
-        pred = model.predict(X_pred)[0]
-        pred_label = le_riesgo.inverse_transform([pred])[0]
-        pred_proba = model.predict_proba(X_pred)[0]
-        sobrecosto_proba = sobrecosto_model.predict_proba(X_pred)[0][1]
-        retraso_proba = retraso_model.predict_proba(X_pred)[0][1]
-        prediccion['riesgo_general'] = pred_label
-        prediccion['probabilidades'] = {clase: float(proba) for clase, proba in zip(le_riesgo.classes_, pred_proba)}
-        prediccion['probabilidad_sobrecosto'] = float(sobrecosto_proba)
-        prediccion['probabilidad_retraso'] = float(retraso_proba)
-    elif not prediccion and request.proyecto:
-        class Dummy:
-            def __init__(self, d):
-                self.__dict__ = d
-            def dict(self):
-                return self.__dict__
-        proyecto_obj = Dummy(request.proyecto)
-        X_pred = pd.DataFrame([proyecto_obj.dict()])
-        X_pred['tipo_proyecto_enc'] = le_tipo.transform(X_pred['tipo_proyecto'])
-        X_pred['metodologia_enc'] = le_metodologia.transform(X_pred['metodologia'])
-        X_pred['complejidad_enc'] = le_complejidad.transform(X_pred['complejidad'])
-        X_pred['experiencia_equipo_enc'] = X_pred['experiencia_equipo']
-        tec_matrix = mlb.transform([X_pred.loc[0, 'tecnologias'].split(',')])
-        tec_df = pd.DataFrame(tec_matrix, columns=[f'tec_{t}' for t in mlb.classes_])
-        for col in tec_df.columns:
-            X_pred[col] = tec_df[col].values
-        features = [
-            'tipo_proyecto_enc', 'metodologia_enc', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
-            'complejidad_enc', 'experiencia_equipo_enc', 'hitos_clave'
-        ] + list(tec_df.columns)
-        for col in features:
-            if col not in X_pred:
-                X_pred[col] = 0
-        X_pred = X_pred[features]
-        pred = model.predict(X_pred)[0]
-        pred_label = le_riesgo.inverse_transform([pred])[0]
-        pred_proba = model.predict_proba(X_pred)[0]
-        sobrecosto_proba = sobrecosto_model.predict_proba(X_pred)[0][1]
-        retraso_proba = retraso_model.predict_proba(X_pred)[0][1]
-        prediccion = {
-            "riesgo_general": pred_label,
-            "probabilidades": {clase: float(proba) for clase, proba in zip(le_riesgo.classes_, pred_proba)},
-            "probabilidad_sobrecosto": float(sobrecosto_proba),
-            "probabilidad_retraso": float(retraso_proba)
-        }
-    # Unificar estructura de datos del proyecto como en /generar-reporte
-    proyecto = request.proyecto
-    proyecto_dict = {
-        "Tipo de proyecto": proyecto.get("tipo_proyecto", ""),
-        "Metodología": proyecto.get("metodologia", ""),
-        "Duración estimada (meses)": proyecto.get("duracion_estimacion", ""),
-        "Presupuesto estimado (USD)": proyecto.get("presupuesto_estimado", ""),
-        "Número de recursos": proyecto.get("numero_recursos", ""),
-        "Tecnologías": proyecto.get("tecnologias", ""),
-        "Complejidad": proyecto.get("complejidad", ""),
-        "Experiencia del equipo": proyecto.get("experiencia_equipo", ""),
-        "Hitos clave": proyecto.get("hitos_clave", "")
-    }
-    prediccion_dict = prediccion or {}
-    # Generar PDF temporal único
+    # Si no hay predicción o le faltan probabilidades, calcularla
+    if not prediccion or not prediccion.get('probabilidades') or not isinstance(prediccion.get('probabilidades'), dict) or len(prediccion.get('probabilidades')) == 0:
+        if request.proyecto:
+            prediccion = _predict_risk(request.proyecto)
+
+    proyecto_dict = _proyecto_to_display_dict(request.proyecto)
+    prediccion_dict = _prediccion_to_report_dict(prediccion or {})
     pdf_path = f"reporte_riesgo_{uuid.uuid4().hex}.pdf"
     generar_reporte_pdf(proyecto_dict, prediccion_dict, filename=pdf_path)
     asunto = "Reporte de Evaluación de Riesgo"
     cuerpo = "Adjunto encontrará el reporte PDF generado automáticamente."
     enviar_reporte_mailhog(request.destinatario, asunto, cuerpo, pdf_path)
-    # Eliminar el archivo PDF temporal
     try:
         os.remove(pdf_path)
     except Exception:

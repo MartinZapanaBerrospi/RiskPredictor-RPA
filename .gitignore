@@ -17,5 +17,14 @@ models/*.pkl
 # Data files
 *.csv
 
-# Reports
+# Reports / Generated PDFs
 reports/*.pdf
+reporte_riesgo*.pdf
+reporte_test.pdf
+
+# Node modules
+node_modules/
+
+# IDE
+.vscode/
+.idea/

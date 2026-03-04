@@ -1,0 +1,1596 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RiskPredictor-RPA | Documentación</title>
+    <meta
+      name="description"
+      content="Sistema inteligente de predicción y gestión de riesgos en proyectos de tecnología usando Machine Learning, FastAPI y React."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ========================================
+           CSS VARIABLES & DESIGN SYSTEM
+           ======================================== */
+      :root {
+        --bg-primary: #0a0e1a;
+        --bg-secondary: #111827;
+        --bg-card: rgba(17, 24, 39, 0.7);
+        --bg-card-hover: rgba(30, 41, 59, 0.8);
+        --bg-code: #1e293b;
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --accent-blue: #3b82f6;
+        --accent-blue-glow: rgba(59, 130, 246, 0.3);
+        --accent-purple: #8b5cf6;
+        --accent-purple-glow: rgba(139, 92, 246, 0.2);
+        --accent-emerald: #10b981;
+        --accent-amber: #f59e0b;
+        --accent-rose: #f43f5e;
+        --accent-cyan: #06b6d4;
+        --gradient-primary: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        --gradient-hero: linear-gradient(
+          160deg,
+          #0a0e1a 0%,
+          #111827 40%,
+          #1e1b4b 100%
+        );
+        --gradient-card: linear-gradient(
+          135deg,
+          rgba(59, 130, 246, 0.05),
+          rgba(139, 92, 246, 0.05)
+        );
+        --border-color: rgba(148, 163, 184, 0.1);
+        --border-glow: rgba(59, 130, 246, 0.2);
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.5);
+        --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.15);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 24px;
+        --font-sans:
+          "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --font-mono: "JetBrains Mono", "Fira Code", monospace;
+      }
+
+      /* ========================================
+           BASE STYLES
+           ======================================== */
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 80px;
+      }
+
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.7;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+
+      ::selection {
+        background: var(--accent-blue);
+        color: white;
+      }
+
+      a {
+        color: var(--accent-blue);
+        text-decoration: none;
+        transition: color 0.25s;
+      }
+      a:hover {
+        color: #60a5fa;
+      }
+
+      /* ========================================
+           ANIMATED BACKGROUND
+           ======================================== */
+      .bg-grid {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+        background-size: 60px 60px;
+      }
+
+      .bg-glow {
+        position: fixed;
+        top: -200px;
+        right: -200px;
+        width: 600px;
+        height: 600px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          var(--accent-blue-glow) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+        z-index: 0;
+        animation: floatGlow 8s ease-in-out infinite alternate;
+      }
+
+      .bg-glow-2 {
+        position: fixed;
+        bottom: -200px;
+        left: -200px;
+        width: 500px;
+        height: 500px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          var(--accent-purple-glow) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+        z-index: 0;
+        animation: floatGlow 10s ease-in-out infinite alternate-reverse;
+      }
+
+      @keyframes floatGlow {
+        from {
+          transform: translate(0, 0) scale(1);
+        }
+        to {
+          transform: translate(50px, 30px) scale(1.1);
+        }
+      }
+
+      /* ========================================
+           NAVIGATION
+           ======================================== */
+      .nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: rgba(10, 14, 26, 0.85);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border-bottom: 1px solid var(--border-color);
+        transition:
+          background 0.3s,
+          box-shadow 0.3s;
+      }
+
+      .nav.scrolled {
+        background: rgba(10, 14, 26, 0.95);
+        box-shadow: var(--shadow-md);
+      }
+
+      .nav-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+      }
+
+      .nav-logo {
+        font-weight: 800;
+        font-size: 1.2rem;
+        letter-spacing: -0.5px;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .nav-logo span {
+        -webkit-text-fill-color: var(--text-secondary);
+        font-weight: 400;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 0.25rem;
+        list-style: none;
+      }
+
+      .nav-links a {
+        display: block;
+        padding: 0.5rem 0.9rem;
+        color: var(--text-secondary);
+        font-size: 0.88rem;
+        font-weight: 500;
+        border-radius: var(--radius-sm);
+        transition: all 0.25s;
+      }
+
+      .nav-links a:hover {
+        color: var(--text-primary);
+        background: rgba(59, 130, 246, 0.1);
+      }
+
+      .nav-hamburger {
+        display: none;
+        cursor: pointer;
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        padding: 0.5rem;
+      }
+
+      /* ========================================
+           HERO SECTION
+           ======================================== */
+      .hero {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 8rem 2rem 4rem;
+        background: var(--gradient-hero);
+      }
+
+      .hero-content {
+        max-width: 800px;
+      }
+
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 1rem;
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 100px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--accent-blue);
+        margin-bottom: 2rem;
+        animation: fadeInUp 0.6s ease-out;
+      }
+
+      .hero-badge .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent-emerald);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      .hero h1 {
+        font-size: clamp(2.5rem, 5vw, 4rem);
+        font-weight: 900;
+        line-height: 1.1;
+        letter-spacing: -1.5px;
+        margin-bottom: 1.5rem;
+        animation: fadeInUp 0.6s ease-out 0.1s both;
+      }
+
+      .hero h1 .gradient-text {
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .hero-description {
+        font-size: 1.15rem;
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto 2.5rem;
+        line-height: 1.8;
+        animation: fadeInUp 0.6s ease-out 0.2s both;
+      }
+
+      .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        animation: fadeInUp 0.6s ease-out 0.3s both;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.8rem 1.6rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        cursor: pointer;
+        border: none;
+        font-family: var(--font-sans);
+      }
+
+      .btn-primary {
+        background: var(--gradient-primary);
+        color: white;
+        box-shadow: 0 4px 15px var(--accent-blue-glow);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px var(--accent-blue-glow);
+        color: white;
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+      }
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--accent-blue);
+        color: var(--text-primary);
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ========================================
+           SECTIONS
+           ======================================== */
+      .section {
+        position: relative;
+        z-index: 1;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 5rem 2rem;
+      }
+
+      .section-header {
+        text-align: center;
+        margin-bottom: 3.5rem;
+      }
+
+      .section-label {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--accent-blue);
+        margin-bottom: 0.8rem;
+      }
+
+      .section-title {
+        font-size: clamp(1.8rem, 3vw, 2.5rem);
+        font-weight: 800;
+        letter-spacing: -0.8px;
+        margin-bottom: 0.8rem;
+      }
+
+      .section-subtitle {
+        font-size: 1.05rem;
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      /* ========================================
+           ARCHITECTURE
+           ======================================== */
+      .arch-flow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+      }
+
+      .arch-node {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 2rem 1.8rem;
+        text-align: center;
+        min-width: 200px;
+        backdrop-filter: blur(10px);
+        transition: all 0.35s;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .arch-node::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: var(--gradient-card);
+        opacity: 0;
+        transition: opacity 0.35s;
+      }
+
+      .arch-node:hover {
+        border-color: var(--border-glow);
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-glow);
+      }
+      .arch-node:hover::before {
+        opacity: 1;
+      }
+
+      .arch-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.8rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      .arch-node h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      .arch-node p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        position: relative;
+        z-index: 1;
+      }
+
+      .arch-arrow {
+        color: var(--accent-blue);
+        font-size: 1.5rem;
+        opacity: 0.5;
+      }
+
+      /* ========================================
+           TECH STACK
+           ======================================== */
+      .tech-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.2rem;
+      }
+
+      .tech-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        transition: all 0.35s;
+        backdrop-filter: blur(10px);
+      }
+
+      .tech-card:hover {
+        border-color: var(--border-glow);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-glow);
+      }
+
+      .tech-icon {
+        font-size: 2rem;
+        flex-shrink: 0;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-md);
+        background: rgba(59, 130, 246, 0.1);
+      }
+
+      .tech-card h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+      }
+
+      .tech-card p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+
+      /* ========================================
+           API REFERENCE
+           ======================================== */
+      .endpoint-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+
+      .endpoint {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 1.2rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s;
+        cursor: pointer;
+      }
+
+      .endpoint:hover {
+        border-color: var(--border-glow);
+        background: var(--bg-card-hover);
+      }
+
+      .endpoint-method {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.3rem 0.7rem;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+        min-width: 56px;
+        text-align: center;
+      }
+
+      .method-get {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--accent-emerald);
+      }
+      .method-post {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent-blue);
+      }
+      .method-put {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--accent-amber);
+      }
+      .method-delete {
+        background: rgba(244, 63, 94, 0.15);
+        color: var(--accent-rose);
+      }
+
+      .endpoint-path {
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        min-width: 260px;
+      }
+
+      .endpoint-desc {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+      }
+
+      /* ========================================
+           ML MODELS
+           ======================================== */
+      .ml-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .ml-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        transition: all 0.35s;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .ml-card::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity 0.35s;
+      }
+
+      .ml-card:hover {
+        border-color: var(--border-glow);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-glow);
+      }
+
+      .ml-card:hover::after {
+        opacity: 1;
+      }
+
+      .ml-card h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 0.6rem;
+      }
+
+      .ml-card p {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+      }
+
+      .ml-tag {
+        display: inline-block;
+        padding: 0.25rem 0.7rem;
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 100px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--accent-blue);
+        margin-right: 0.4rem;
+        margin-bottom: 0.4rem;
+      }
+
+      /* ========================================
+           FEATURES
+           ======================================== */
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .feature-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 1.8rem;
+        text-align: center;
+        transition: all 0.35s;
+      }
+
+      .feature-card:hover {
+        border-color: var(--border-glow);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-glow);
+      }
+
+      .feature-icon {
+        font-size: 2.2rem;
+        margin-bottom: 1rem;
+      }
+
+      .feature-card h3 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+
+      .feature-card p {
+        font-size: 0.88rem;
+        color: var(--text-secondary);
+      }
+
+      /* ========================================
+           INSTALLATION
+           ======================================== */
+      .install-steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+      }
+
+      .install-block {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+      }
+
+      .install-block h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .step-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        color: white;
+        font-size: 0.8rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .code-block {
+        background: var(--bg-code);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        padding: 1rem 1.2rem;
+        margin: 0.8rem 0;
+        overflow-x: auto;
+      }
+
+      .code-block code {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--accent-cyan);
+        line-height: 1.6;
+      }
+
+      .code-block .comment {
+        color: var(--text-muted);
+      }
+
+      .install-block ol {
+        list-style: none;
+        counter-reset: step;
+      }
+
+      .install-block ol li {
+        counter-increment: step;
+        margin-bottom: 0.8rem;
+        padding-left: 0;
+        font-size: 0.92rem;
+        color: var(--text-secondary);
+      }
+
+      /* ========================================
+           PROJECT STRUCTURE
+           ======================================== */
+      .tree-block {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        max-width: 700px;
+        margin: 0 auto;
+      }
+
+      .tree {
+        font-family: var(--font-mono);
+        font-size: 0.88rem;
+        line-height: 1.9;
+        color: var(--text-secondary);
+      }
+
+      .tree .dir {
+        color: var(--accent-blue);
+        font-weight: 600;
+      }
+      .tree .file {
+        color: var(--text-secondary);
+      }
+      .tree .desc {
+        color: var(--text-muted);
+        font-family: var(--font-sans);
+        font-size: 0.82rem;
+      }
+
+      /* ========================================
+           FOOTER
+           ======================================== */
+      .footer {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        padding: 3rem 2rem;
+        border-top: 1px solid var(--border-color);
+        color: var(--text-muted);
+        font-size: 0.88rem;
+      }
+
+      .footer a {
+        color: var(--accent-blue);
+      }
+      .footer p {
+        margin-bottom: 0.4rem;
+      }
+
+      /* ========================================
+           RESPONSIVE
+           ======================================== */
+      @media (max-width: 768px) {
+        .nav-links {
+          display: none;
+        }
+        .nav-hamburger {
+          display: block;
+        }
+        .nav-links.open {
+          display: flex;
+          flex-direction: column;
+          position: absolute;
+          top: 64px;
+          left: 0;
+          right: 0;
+          background: rgba(10, 14, 26, 0.98);
+          border-bottom: 1px solid var(--border-color);
+          padding: 1rem;
+        }
+        .arch-flow {
+          flex-direction: column;
+        }
+        .arch-arrow {
+          transform: rotate(90deg);
+        }
+        .endpoint {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+        }
+        .endpoint-path {
+          min-width: auto;
+        }
+        .install-steps {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ========================================
+           SCROLL ANIMATIONS
+           ======================================== */
+      .reveal {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* ========================================
+           DIVIDER
+           ======================================== */
+      .section-divider {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--border-color),
+          transparent
+        );
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Animated background -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+      <div class="nav-inner">
+        <div class="nav-logo">RiskPredictor<span>-RPA</span></div>
+        <button
+          class="nav-hamburger"
+          onclick="
+            document.querySelector('.nav-links').classList.toggle('open')
+          "
+          aria-label="Menú"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M3 12h18M3 6h18M3 18h18" />
+          </svg>
+        </button>
+        <ul class="nav-links">
+          <li><a href="#arquitectura">Arquitectura</a></li>
+          <li><a href="#tecnologias">Tecnologías</a></li>
+          <li><a href="#funcionalidades">Funcionalidades</a></li>
+          <li><a href="#api">API</a></li>
+          <li><a href="#modelos">Modelos ML</a></li>
+          <li><a href="#instalacion">Instalación</a></li>
+          <li><a href="#estructura">Estructura</a></li>
+          <li>
+            <a
+              href="https://github.com/MartinZapanaBerrospi/RiskPredictor-RPA"
+              target="_blank"
+              >GitHub ↗</a
+            >
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          Machine Learning &bull; FastAPI &bull; React
+        </div>
+        <h1>
+          Predicción de<br />
+          <span class="gradient-text">Riesgos en Proyectos TI</span>
+        </h1>
+        <p class="hero-description">
+          Sistema inteligente que combina modelos XGBoost con una API REST de
+          alto rendimiento y un frontend moderno para predecir y gestionar
+          riesgos en proyectos de tecnología.
+        </p>
+        <div class="hero-buttons">
+          <a href="#instalacion" class="btn btn-primary">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M12 5v14M5 12l7 7 7-7" />
+            </svg>
+            Comenzar
+          </a>
+          <a
+            href="https://github.com/MartinZapanaBerrospi/RiskPredictor-RPA"
+            target="_blank"
+            class="btn btn-secondary"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              />
+            </svg>
+            Ver en GitHub
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <div class="section-divider"></div>
+    <section class="section" id="arquitectura">
+      <div class="section-header reveal">
+        <span class="section-label">Arquitectura</span>
+        <h2 class="section-title">Flujo del Sistema</h2>
+        <p class="section-subtitle">
+          Arquitectura modular con separación clara entre frontend, API y
+          modelos de Machine Learning
+        </p>
+      </div>
+      <div class="arch-flow reveal">
+        <div class="arch-node">
+          <div class="arch-icon">👤</div>
+          <h3>Usuario</h3>
+          <p>
+            Interactúa con el formulario de predicción y gestión de proyectos
+          </p>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-icon">⚛️</div>
+          <h3>Frontend React</h3>
+          <p>
+            Formularios dinámicos, visualización de resultados y gestión de
+            proyectos
+          </p>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-icon">⚡</div>
+          <h3>API FastAPI</h3>
+          <p>Endpoints REST para predicción, reportes PDF y reentrenamiento</p>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-icon">🧠</div>
+          <h3>Modelos XGBoost</h3>
+          <p>3 modelos entrenados: riesgo general, sobrecosto y retraso</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tech Stack -->
+    <div class="section-divider"></div>
+    <section class="section" id="tecnologias">
+      <div class="section-header reveal">
+        <span class="section-label">Stack Tecnológico</span>
+        <h2 class="section-title">Tecnologías Utilizadas</h2>
+        <p class="section-subtitle">
+          Herramientas modernas y robustas para cada capa del sistema
+        </p>
+      </div>
+      <div class="tech-grid reveal">
+        <div class="tech-card">
+          <div class="tech-icon">🐍</div>
+          <div>
+            <h3>Python 3.8+</h3>
+            <p>Lenguaje principal para backend, ML y utilidades del sistema</p>
+          </div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon">⚡</div>
+          <div>
+            <h3>FastAPI</h3>
+            <p>
+              Framework REST de alto rendimiento con documentación automática
+              OpenAPI
+            </p>
+          </div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon">🚀</div>
+          <div>
+            <h3>XGBoost</h3>
+            <p>
+              Algoritmo de Gradient Boosting para predicción multiclase y
+              binaria
+            </p>
+          </div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon">⚛️</div>
+          <div>
+            <h3>React 19 + TypeScript</h3>
+            <p>
+              Frontend moderno con tipado estático y componentes reutilizables
+            </p>
+          </div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon">📦</div>
+          <div>
+            <h3>Vite</h3>
+            <p>Build tool ultrarrápido con HMR para desarrollo del frontend</p>
+          </div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon">🔬</div>
+          <div>
+            <h3>Scikit-learn</h3>
+            <p>
+              Preprocessing, encoding y métricas de evaluación de modelos ML
+            </p>
+          </div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon">📊</div>
+          <div>
+            <h3>Pandas & NumPy</h3>
+            <p>
+              Manipulación de datos tabulares y computación numérica eficiente
+            </p>
+          </div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon">📄</div>
+          <div>
+            <h3>FPDF2</h3>
+            <p>
+              Generación de reportes PDF profesionales con evaluaciones de
+              riesgo
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <div class="section-divider"></div>
+    <section class="section" id="funcionalidades">
+      <div class="section-header reveal">
+        <span class="section-label">Funcionalidades</span>
+        <h2 class="section-title">¿Qué puede hacer?</h2>
+        <p class="section-subtitle">
+          Capacidades principales del sistema de predicción de riesgos
+        </p>
+      </div>
+      <div class="features-grid reveal">
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Predicción de Riesgo</h3>
+          <p>
+            Clasifica el riesgo general del proyecto como Alto, Medio o Bajo con
+            probabilidades detalladas
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💰</div>
+          <h3>Probabilidad de Sobrecosto</h3>
+          <p>
+            Estima la probabilidad de que el proyecto exceda su presupuesto
+            planificado
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⏱️</div>
+          <h3>Probabilidad de Retraso</h3>
+          <p>
+            Predice si el proyecto se retrasará respecto a la duración estimada
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <h3>Gestión de Proyectos</h3>
+          <p>
+            CRUD completo de proyectos en ejecución con seguimiento y
+            finalización
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📄</div>
+          <h3>Reportes PDF</h3>
+          <p>
+            Generación automática de reportes profesionales descargables con
+            interpretación de resultados
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h3>Reentrenamiento</h3>
+          <p>
+            Actualiza los modelos ML desde la interfaz con datos de proyectos
+            finalizados
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📧</div>
+          <h3>Envío por Email</h3>
+          <p>
+            Envía reportes PDF por correo electrónico mediante integración con
+            MailHog
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌗</div>
+          <h3>Tema Claro/Oscuro</h3>
+          <p>Interfaz adaptable con soporte para modo oscuro persistente</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- API Reference -->
+    <div class="section-divider"></div>
+    <section class="section" id="api">
+      <div class="section-header reveal">
+        <span class="section-label">API Reference</span>
+        <h2 class="section-title">Endpoints REST</h2>
+        <p class="section-subtitle">
+          API FastAPI documentada con validación automática vía Pydantic
+        </p>
+      </div>
+      <div class="endpoint-list reveal">
+        <div class="endpoint">
+          <span class="endpoint-method method-get">GET</span>
+          <span class="endpoint-path">/</span>
+          <span class="endpoint-desc"
+            >Health check — verifica que la API está en ejecución</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-post">POST</span>
+          <span class="endpoint-path">/predict</span>
+          <span class="endpoint-desc"
+            >Predice riesgo general, sobrecosto y retraso para un proyecto</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-get">GET</span>
+          <span class="endpoint-path">/opciones-formulario</span>
+          <span class="endpoint-desc"
+            >Obtiene opciones dinámicas del formulario (tipos, tecnologías,
+            metodologías)</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-put">PUT</span>
+          <span class="endpoint-path">/opciones-formulario</span>
+          <span class="endpoint-desc"
+            >Actualiza las opciones del formulario</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-post">POST</span>
+          <span class="endpoint-path">/proyectos-ejecucion</span>
+          <span class="endpoint-desc"
+            >Registra un nuevo proyecto en ejecución</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-get">GET</span>
+          <span class="endpoint-path">/proyectos-ejecucion</span>
+          <span class="endpoint-desc"
+            >Lista todos los proyectos en ejecución</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-get">GET</span>
+          <span class="endpoint-path">/proyectos-ejecucion/{id}</span>
+          <span class="endpoint-desc"
+            >Obtiene datos de un proyecto específico</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-put">PUT</span>
+          <span class="endpoint-path">/proyectos-ejecucion/{id}</span>
+          <span class="endpoint-desc"
+            >Actualiza los datos de un proyecto en ejecución</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-post">POST</span>
+          <span class="endpoint-path">/proyectos-ejecucion/{id}/finalizar</span>
+          <span class="endpoint-desc"
+            >Finaliza un proyecto y lo mueve al dataset de entrenamiento</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-delete">DEL</span>
+          <span class="endpoint-path">/proyectos-ejecucion/{id}</span>
+          <span class="endpoint-desc">Elimina un proyecto en ejecución</span>
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-post">POST</span>
+          <span class="endpoint-path">/reentrenar-modelo</span>
+          <span class="endpoint-desc"
+            >Reentrena los modelos ML con los datos actualizados</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-post">POST</span>
+          <span class="endpoint-path">/generar-reporte</span>
+          <span class="endpoint-desc"
+            >Genera y descarga un PDF profesional con la evaluación del
+            riesgo</span
+          >
+        </div>
+        <div class="endpoint">
+          <span class="endpoint-method method-post">POST</span>
+          <span class="endpoint-path">/enviar-reporte-mailhog</span>
+          <span class="endpoint-desc"
+            >Genera el PDF y lo envía por email vía MailHog</span
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- ML Models -->
+    <div class="section-divider"></div>
+    <section class="section" id="modelos">
+      <div class="section-header reveal">
+        <span class="section-label">Machine Learning</span>
+        <h2 class="section-title">Modelos de Predicción</h2>
+        <p class="section-subtitle">
+          Tres modelos XGBoost especializados entrenados con datos sintéticos
+          realistas
+        </p>
+      </div>
+      <div class="ml-grid reveal">
+        <div class="ml-card">
+          <h3>🎯 Riesgo General</h3>
+          <p>
+            Clasificación multiclase (Alto, Medio, Bajo) del riesgo global del
+            proyecto usando <strong>XGBClassifier</strong> con optimización de
+            hiperparámetros vía <strong>GridSearchCV</strong>.
+          </p>
+          <span class="ml-tag">multi:softprob</span>
+          <span class="ml-tag">GridSearchCV</span>
+          <span class="ml-tag">3 clases</span>
+          <span class="ml-tag">Upsampling</span>
+        </div>
+        <div class="ml-card">
+          <h3>💰 Sobrecosto</h3>
+          <p>
+            Clasificación binaria que predice si el costo real superará al
+            presupuesto estimado. Evalúa con <strong>ROC AUC</strong> y
+            <strong>Log-loss</strong>.
+          </p>
+          <span class="ml-tag">binary:logistic</span>
+          <span class="ml-tag">ROC AUC</span>
+          <span class="ml-tag">Probabilístico</span>
+        </div>
+        <div class="ml-card">
+          <h3>⏱️ Retraso</h3>
+          <p>
+            Clasificación binaria que predice si la duración real excederá al
+            estimado del proyecto, usando el mismo set de features.
+          </p>
+          <span class="ml-tag">binary:logistic</span>
+          <span class="ml-tag">Log-loss</span>
+          <span class="ml-tag">Probabilístico</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 2.5rem" class="reveal">
+        <div class="tree-block">
+          <h3 style="margin-bottom: 1rem; font-size: 1.05rem">
+            Features del Modelo
+          </h3>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 0.5rem;
+            "
+          >
+            <div style="padding: 0.5rem; font-size: 0.88rem">
+              <code style="color: var(--accent-cyan)">tipo_proyecto</code> —
+              Tipo de proyecto TI
+            </div>
+            <div style="padding: 0.5rem; font-size: 0.88rem">
+              <code style="color: var(--accent-cyan)">metodologia</code> —
+              Scrum, Kanban, etc.
+            </div>
+            <div style="padding: 0.5rem; font-size: 0.88rem">
+              <code style="color: var(--accent-cyan)">duracion_estimacion</code>
+              — Meses planificados
+            </div>
+            <div style="padding: 0.5rem; font-size: 0.88rem">
+              <code style="color: var(--accent-cyan)"
+                >presupuesto_estimado</code
+              >
+              — USD planificado
+            </div>
+            <div style="padding: 0.5rem; font-size: 0.88rem">
+              <code style="color: var(--accent-cyan)">numero_recursos</code> —
+              Personas asignadas
+            </div>
+            <div style="padding: 0.5rem; font-size: 0.88rem">
+              <code style="color: var(--accent-cyan)">tecnologias</code> —
+              Multi-hot encoded
+            </div>
+            <div style="padding: 0.5rem; font-size: 0.88rem">
+              <code style="color: var(--accent-cyan)">complejidad</code> — Baja,
+              Media, Alta
+            </div>
+            <div style="padding: 0.5rem; font-size: 0.88rem">
+              <code style="color: var(--accent-cyan)">experiencia_equipo</code>
+              — Años promedio
+            </div>
+            <div style="padding: 0.5rem; font-size: 0.88rem">
+              <code style="color: var(--accent-cyan)">hitos_clave</code> —
+              Número de milestones
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Installation -->
+    <div class="section-divider"></div>
+    <section class="section" id="instalacion">
+      <div class="section-header reveal">
+        <span class="section-label">Comenzar</span>
+        <h2 class="section-title">Instalación y Ejecución</h2>
+        <p class="section-subtitle">
+          Configura el entorno en minutos con estos pasos
+        </p>
+      </div>
+      <div class="install-steps reveal">
+        <div class="install-block">
+          <h3><span class="step-number">1</span> Backend (API FastAPI)</h3>
+          <div class="code-block">
+            <code>
+              <span class="comment"># Clonar el repositorio</span><br />
+              git clone
+              https://github.com/MartinZapanaBerrospi/RiskPredictor-RPA.git<br />
+              <br />
+              <span class="comment"># Instalar dependencias Python</span><br />
+              pip install -r requirements.txt<br />
+              <br />
+              <span class="comment"># (Opcional) Generar datos sintéticos</span
+              ><br />
+              python data/generate_synthetic_data.py<br />
+              <br />
+              <span class="comment"># Entrenar los modelos</span><br />
+              python models/train_xgboost.py<br />
+              <br />
+              <span class="comment"># Iniciar la API</span><br />
+              uvicorn api.main:app --reload
+            </code>
+          </div>
+          <p
+            style="
+              font-size: 0.85rem;
+              color: var(--text-secondary);
+              margin-top: 0.8rem;
+            "
+          >
+            📖 Documentación interactiva en
+            <a
+              href="http://localhost:8000/docs"
+              style="color: var(--accent-cyan)"
+              >http://localhost:8000/docs</a
+            >
+          </p>
+        </div>
+        <div class="install-block">
+          <h3><span class="step-number">2</span> Frontend (React + Vite)</h3>
+          <div class="code-block">
+            <code>
+              <span class="comment"># Entrar a la carpeta frontend</span><br />
+              cd frontend<br />
+              <br />
+              <span class="comment"># Instalar dependencias</span><br />
+              npm install<br />
+              <br />
+              <span class="comment"># Iniciar servidor de desarrollo</span
+              ><br />
+              npm run dev
+            </code>
+          </div>
+          <p
+            style="
+              font-size: 0.85rem;
+              color: var(--text-secondary);
+              margin-top: 0.8rem;
+            "
+          >
+            🌐 Interfaz disponible en
+            <a href="http://localhost:5173" style="color: var(--accent-cyan)"
+              >http://localhost:5173</a
+            >
+          </p>
+          <div
+            style="
+              margin-top: 1.2rem;
+              padding: 1rem;
+              background: rgba(59, 130, 246, 0.08);
+              border: 1px solid rgba(59, 130, 246, 0.15);
+              border-radius: var(--radius-sm);
+            "
+          >
+            <p style="font-size: 0.85rem; color: var(--text-secondary)">
+              <strong style="color: var(--accent-blue)">Requisitos:</strong>
+              Python 3.8+ &bull; Node.js 18+ &bull; pip &bull; npm
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Project Structure -->
+    <div class="section-divider"></div>
+    <section class="section" id="estructura">
+      <div class="section-header reveal">
+        <span class="section-label">Organización</span>
+        <h2 class="section-title">Estructura del Proyecto</h2>
+      </div>
+      <div class="tree-block reveal">
+        <div class="tree">
+          <span class="dir">RiskPredictor-RPA/</span><br />
+          ├── <span class="dir">api/</span>
+          <span class="desc">— API REST con FastAPI</span><br />
+          │&nbsp;&nbsp; └── main.py
+          <span class="desc">— Endpoints, predicción, reportes</span><br />
+          ├── <span class="dir">data/</span>
+          <span class="desc">— Datos y scripts de generación</span><br />
+          │&nbsp;&nbsp; ├── generate_synthetic_data.py<br />
+          │&nbsp;&nbsp; ├── preparacion.py<br />
+          │&nbsp;&nbsp; └── opciones_formulario.json<br />
+          ├── <span class="dir">models/</span>
+          <span class="desc">— Entrenamiento de modelos ML</span><br />
+          │&nbsp;&nbsp; ├── train_xgboost.py
+          <span class="desc">— Script principal de entrenamiento</span><br />
+          │&nbsp;&nbsp; └── prueba_comparacion_modelos.py<br />
+          ├── <span class="dir">frontend/</span>
+          <span class="desc">— Aplicación React + TypeScript</span><br />
+          │&nbsp;&nbsp; └── <span class="dir">src/</span><br />
+          │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── App.tsx
+          <span class="desc">— Formulario principal</span><br />
+          │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── ProyectosEjecucion.tsx<br />
+          │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── Modal*.tsx
+          <span class="desc">— Modales de resultado</span><br />
+          │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; └── App.css
+          <span class="desc">— Estilos completos</span><br />
+          ├── <span class="dir">utils/</span>
+          <span class="desc">— Utilidades del backend</span><br />
+          │&nbsp;&nbsp; ├── reporte_profesional.py
+          <span class="desc">— Generación de PDFs</span><br />
+          │&nbsp;&nbsp; └── email_mailhog.py
+          <span class="desc">— Envío de emails</span><br />
+          ├── <span class="dir">docs/</span>
+          <span class="desc">— Documentación (GitHub Pages)</span><br />
+          ├── requirements.txt<br />
+          ├── .gitignore<br />
+          └── README.md
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p><strong>RiskPredictor-RPA</strong></p>
+      <p>
+        Desarrollado por <strong>Grupo 7</strong> — RPA para la Gestión de
+        Riesgos en Proyectos de Tecnología
+      </p>
+      <p style="margin-top: 0.6rem">
+        <a href="https://github.com/MartinZapanaBerrospi/RiskPredictor-RPA"
+          >GitHub</a
+        >
+        &nbsp;•&nbsp;
+        <a href="http://localhost:8000/docs">API Docs</a>
+      </p>
+    </footer>
+
+    <!-- Scroll reveal script -->
+    <script>
+      // Nav scroll effect
+      window.addEventListener("scroll", () => {
+        document
+          .getElementById("nav")
+          .classList.toggle("scrolled", window.scrollY > 20);
+      });
+
+      // Reveal on scroll
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+            }
+          });
+        },
+        { threshold: 0.1, rootMargin: "0px 0px -50px 0px" },
+      );
+
+      document
+        .querySelectorAll(".reveal")
+        .forEach((el) => observer.observe(el));
+
+      // Close mobile menu on link click
+      document.querySelectorAll(".nav-links a").forEach((link) => {
+        link.addEventListener("click", () => {
+          document.querySelector(".nav-links").classList.remove("open");
+        });
+      });
+    </script>
+  </body>
+</html>
