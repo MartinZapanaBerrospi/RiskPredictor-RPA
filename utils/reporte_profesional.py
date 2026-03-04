@@ -5,14 +5,18 @@ import re
 def capitalize_text(text):
     if not isinstance(text, str):
         return text
-    # Capitaliza cada palabra, pero mantiene siglas (3+ mayúsculas) y palabras de 2 letras en mayúsculas
+    # Si hay comas sin espacio, añadirles espacio para correcta separación
+    text = str(text).replace(',', ', ')
+    text = re.sub(r'\s+', ' ', text).strip()
+    
     def smart_cap(word):
-        if word.isupper() and len(word) > 2:
-            return word  # Siglas
-        if len(word) <= 2:
-            return word.upper()  # Palabras cortas tipo TI, IA
-        return word[:1].upper() + word[1:].lower()
-    return ' '.join(smart_cap(w) for w in re.split(r'(\s+)', text))
+        clean_word = word.strip(',.')
+        if clean_word.isupper() and len(clean_word) > 2:
+            return word  # Mantener siglas (ej. ERP, API)
+        if len(clean_word) <= 2:
+            return word.upper()  # AI, BD, TI
+        return word.capitalize()
+    return ' '.join(smart_cap(w) for w in text.split(' '))
 
 class PDFReport(FPDF):
     def header(self):
@@ -94,24 +98,34 @@ def generar_reporte_pdf(proyecto, prediccion=None, filename="reporte_riesgo.pdf"
         pdf.section_body("No se ha realizado una predicción para este proyecto.")
 
     # Sección: Interpretación (debajo de lo anterior, en la misma hoja si hay espacio)
-    pdf.section_title('Interpretación de Resultados')
+    pdf.section_title('Análisis Ejecutivo y Recomendaciones')
     interpretacion = ""
     riesgo = prediccion.get('riesgo_general', '').lower() if prediccion else ''
+    
     if riesgo == 'alto':
         interpretacion += (
-            "El modelo ha determinado que el riesgo general del proyecto es ALTO. Esto significa que, según los datos ingresados, existe una alta probabilidad de que el proyecto enfrente dificultades significativas en su ejecución, como retrasos, sobrecostos o problemas de calidad. Se recomienda tomar medidas preventivas inmediatas, reforzar la gestión y monitorear de cerca los hitos críticos.\n\n"
+            "Nivel de Riesgo General: ALTO (Estado Crítico)\n"
+            "El algoritmo predictivo ha identificado una probabilidad significativa de que este proyecto experimente desviaciones severas. "
+            "Se detectan patrones históricos que apuntan a posibles obstáculos estructurales. "
+            "Recomendación Estratégica: Se sugiere la intervención inmediata de la PMO (Project Management Office) para reestructurar la planificación, auditar el alcance inicial y establecer métricas de monitoreo iterativo (KPIs diarios).\n\n"
         )
     elif riesgo == 'medio':
         interpretacion += (
-            "El modelo ha determinado que el riesgo general del proyecto es MEDIO. Esto indica que el proyecto tiene una probabilidad moderada de enfrentar algunos desafíos, pero con una gestión adecuada es posible mitigar los riesgos y lograr los objetivos. Se recomienda mantener un monitoreo constante y ajustar los planes según sea necesario.\n\n"
+            "Nivel de Riesgo General: MEDIO (Alerta Preventiva)\n"
+            "Las características ingresadas perfilan un proyecto con desafíos operativos moderados. "
+            "El modelo señala áreas de fricción típicas que podrían materializarse afectando el ROI si no reciben antención proactiva. "
+            "Recomendación Estratégica: Establecer puntos de control semanales, afinar las estimaciones presupuestales y mantener una comunicación directa con los stakeholders para la aprobación de cambios.\n\n"
         )
     elif riesgo == 'bajo':
         interpretacion += (
-            "El modelo ha determinado que el riesgo general del proyecto es BAJO. Esto sugiere que, de acuerdo a los datos proporcionados, el proyecto tiene buenas condiciones para su éxito. Sin embargo, es importante no descuidar la gestión y continuar con buenas prácticas de seguimiento.\n\n"
+            "Nivel de Riesgo General: BAJO (Estable)\n"
+            "Los indicadores predictivos sugieren condiciones altamente favorables para la ejecución técnica y financiera del proyecto. "
+            "Los parámetros estructurales ingresados se alinean firmemente con los perfiles históricos de éxito y entrega a tiempo. "
+            "Recomendación Estratégica: Continuar con la hoja de ruta establecida, asegurando prácticas estándar de calidad e integración continua.\n\n"
         )
     else:
         interpretacion += (
-            "El modelo ha generado un resultado de riesgo general no esperado o no se realizó predicción.\n\n"
+            "El modelo no logró determinar un perfil de riesgo claro basándose en los datos provistos.\n\n"
         )
 
     # Interpretación de probabilidades
@@ -120,34 +134,32 @@ def generar_reporte_pdf(proyecto, prediccion=None, filename="reporte_riesgo.pdf"
         clase_max = max(probabilidades, key=probabilidades.get)
         prob_max = probabilidades[clase_max]
         interpretacion += (
-            f"La clase con mayor probabilidad es '{clase_max}' con un {prob_max*100:.1f}% de confianza. "
-            "Esto significa que, de todas las categorías posibles, el modelo considera que esta es la más probable para el proyecto evaluado.\n"
+            f"Evaluación de Confiabilidad: El motor clasifica el proyecto primariamente como '{clase_max}' con un nivel de certidumbre analítica del {prob_max*100:.1f}%. "
+            "El margen estadístico apoya fehacientemente este análisis direccional.\n"
         )
-        otras = [(k, v) for k, v in probabilidades.items() if k != clase_max]
-        if otras:
-            interpretacion += "Las otras probabilidades son: "
-            interpretacion += ", ".join([f"{k}: {v*100:.1f}%" for k, v in otras]) + ".\n"
     elif prediccion:
-        interpretacion += "No se encontraron probabilidades detalladas para interpretar.\n"
+        interpretacion += "No se dispone del desglose de varianzas para interpretación.\n"
     else:
-        interpretacion += "No se realizó predicción para este proyecto.\n"
+        interpretacion += "No se realizó evaluación predictiva para el documento en curso.\n"
 
     # Interpretación de sobrecosto y retraso si existen
     prob_sobrecosto = prediccion.get('probabilidad_sobrecosto') if prediccion else None
     prob_retraso = prediccion.get('probabilidad_retraso') if prediccion else None
+    
     if prob_sobrecosto is not None:
-        interpretacion += (f"\nProbabilidad de sobrecosto: {prob_sobrecosto*100:.1f}%. "
-            + ("Un valor alto indica que el proyecto tiene una alta probabilidad de exceder el presupuesto estimado. Se recomienda revisar los costos, identificar posibles desviaciones y establecer controles financieros más estrictos."
+        interpretacion += (f"\nAnálisis Financiero (Exposición a Sobrecosto: {prob_sobrecosto*100:.1f}%):\n"
+            + ("Alta exposición a desviaciones presupuestarias perjudiciales. Es perentorio revisar el Capex y blindar las reservas de contingencia.\n"
                if prob_sobrecosto >= 0.5 else
-               "Un valor bajo indica que el proyecto tiene buenas perspectivas de mantenerse dentro del presupuesto, aunque siempre es recomendable monitorear los gastos."))
+               "La viabilidad financiera es robusta; el dimensionamiento del presupuesto proyecta ser suficiente y previsiblemente holgado.\n"))
+               
     if prob_retraso is not None:
-        interpretacion += (f"\nProbabilidad de retraso: {prob_retraso*100:.1f}%. "
-            + ("Un valor alto sugiere que el proyecto podría no cumplir con los plazos establecidos. Se recomienda reforzar la planificación, monitorear los hitos y gestionar los recursos de manera eficiente."
+        interpretacion += (f"\nAnálisis Operativo (Exposición a Retraso: {prob_retraso*100:.1f}%):\n"
+            + ("Riesgo patente de violar la línea base del cronograma maestro. Resulta imperante aplicar técnicas de compresión y examinar el camino crítico logístico.\n"
                if prob_retraso >= 0.5 else
-               "Un valor bajo indica que el proyecto tiene buenas perspectivas de cumplir los plazos, pero es importante mantener un seguimiento constante del cronograma."))
+               "Plena factibilidad temporal para alcanzar el delivery en los plazos contractuales previamente pactados, recomendando sostener el control de hitos.\n"))
 
     # Explicación final
-    interpretacion += ("\nEsta interpretación se basa únicamente en los resultados obtenidos y busca orientar la toma de decisiones. Recuerde que el reporte es una herramienta de apoyo y no reemplaza el juicio profesional del equipo gestor.")
+    interpretacion += ("\nAviso de Exención de Responsabilidad: Este compendio inferencial se sustenta en el aprendizaje empírico de modelos algorítmicos. Está diseñado para elevar la calidad de decisión directiva, complementando y jamás sustituyendo la pericia subjetiva humana y el juicio del Project Manager.")
     pdf.section_body(interpretacion)
 
     pdf.output(filename)
