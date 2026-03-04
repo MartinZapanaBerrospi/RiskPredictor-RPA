@@ -11,9 +11,6 @@ ENV/
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
 
-# Model files
-models/*.pkl
-
 # Data files
 *.csv
 

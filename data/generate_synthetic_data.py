@@ -1,11 +1,14 @@
 import pandas as pd
 import numpy as np
 import random
+import os
 
 # Semilla para reproducibilidad
 definir_semilla = 42
 np.random.seed(definir_semilla)
 random.seed(definir_semilla)
+
+DATA_DIR = os.path.dirname(__file__)
 
 N = 20000  # Número de proyectos sintéticos
 
@@ -147,6 +150,10 @@ cond_alto = (df['puntos_riesgo'] >= 3) | ((df['riesgo_costo_prob'] > 0.7) & (df[
 cond_medio = (df['puntos_riesgo'] == 2) | ((df['riesgo_costo_prob'] > 0.7) | (df['riesgo_tiempo_prob'] > 0.7))
 df['riesgo_general'] = np.select([cond_alto, cond_medio], ['Alto', 'Medio'], default='Bajo')
 
+# Rutas absolutas para guardar los CSV dentro de la carpeta data/
+path_full = os.path.join(DATA_DIR, 'synthetic_data_with_outputs.csv')
+path_inputs = os.path.join(DATA_DIR, 'synthetic_data.csv')
+
 # Guardar todos los campos relevantes en synthetic_data_with_outputs.csv
 cols_full = [
     'tipo_proyecto', 'metodologia', 'duracion_estimacion', 'presupuesto_estimado', 'numero_recursos',
@@ -156,7 +163,7 @@ cols_full = [
     'riesgo_costo_prob', 'riesgo_tiempo_prob',
     'puntos_riesgo', 'riesgo_general'
 ]
-df[cols_full].to_csv('synthetic_data_with_outputs.csv', index=False)
+df[cols_full].to_csv(path_full, index=False)
 
 # Guardar solo los inputs en synthetic_data.csv (sin sobrecosto, retraso ni puntos_riesgo)
 inputs_cols = [
@@ -164,6 +171,6 @@ inputs_cols = [
     'tecnologias', 'complejidad', 'experiencia_equipo', 'hitos_clave',
     'costo_real', 'duracion_real'
 ]
-df[inputs_cols].to_csv('synthetic_data.csv', index=False)
+df[inputs_cols].to_csv(path_inputs, index=False)
 
 print('¡Datos completos guardados en synthetic_data_with_outputs.csv y solo inputs en synthetic_data.csv!')
