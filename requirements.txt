@@ -7,3 +7,5 @@ joblib
 numpy
 fpdf2
 gunicorn
+psycopg2-binary
+python-dotenv

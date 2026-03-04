@@ -12,83 +12,99 @@ import uuid
 import csv
 import subprocess
 import sys
-import sqlite3
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+
 from utils.reporte_profesional import generar_reporte_pdf
 from utils.email_mailhog import enviar_reporte_mailhog
 
+load_dotenv()
+
 app = FastAPI()
 
-# Inicialización de Base de Datos SQLite Persistente
-DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/riesgos.db'))
+# Inicialización de Base de Datos PostgreSQL Persistente
+DB_URL = os.getenv("DATABASE_URL")
+
+def get_db_connection():
+    if not DB_URL:
+        raise Exception("DATABASE_URL no está configurada")
+    return psycopg2.connect(DB_URL)
 
 def init_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        
-        # Tabla auditoria (Log automático oculto)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS auditoria_predicciones (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
-                tipo_proyecto TEXT,
-                metodologia TEXT,
-                duracion_estimacion REAL,
-                presupuesto_estimado REAL,
-                numero_recursos REAL,
-                tecnologias TEXT,
-                complejidad TEXT,
-                experiencia_equipo REAL,
-                hitos_clave REAL,
-                riesgo_general TEXT,
-                probabilidad_sobrecosto REAL,
-                probabilidad_retraso REAL
-            )
-        ''')
-        
-        # Tabla proyectos_ejecucion (para Guardar Proyectos desde el Frontend)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS proyectos_ejecucion (
-                id TEXT PRIMARY KEY,
-                fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-                tipo_proyecto TEXT,
-                metodologia TEXT,
-                duracion_estimacion REAL,
-                presupuesto_estimado REAL,
-                numero_recursos REAL,
-                tecnologias TEXT,
-                complejidad TEXT,
-                experiencia_equipo REAL,
-                hitos_clave REAL,
-                costo_real REAL,
-                duracion_real REAL,
-                riesgo_general TEXT,
-                estado TEXT DEFAULT 'ejecucion'
-            )
-        ''')
-        conn.commit()
+    if not DB_URL:
+        print("Advertencia: DATABASE_URL no está configurada. Saltando init_db().")
+        return
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Tabla auditoria (Log automático oculto)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS auditoria_predicciones (
+                        id SERIAL PRIMARY KEY,
+                        fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        tipo_proyecto TEXT,
+                        metodologia TEXT,
+                        duracion_estimacion REAL,
+                        presupuesto_estimado REAL,
+                        numero_recursos REAL,
+                        tecnologias TEXT,
+                        complejidad TEXT,
+                        experiencia_equipo REAL,
+                        hitos_clave REAL,
+                        riesgo_general TEXT,
+                        probabilidad_sobrecosto REAL,
+                        probabilidad_retraso REAL
+                    )
+                ''')
+                
+                # Tabla proyectos_ejecucion (para Guardar Proyectos desde el Frontend)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS proyectos_ejecucion (
+                        id TEXT PRIMARY KEY,
+                        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        tipo_proyecto TEXT,
+                        metodologia TEXT,
+                        duracion_estimacion REAL,
+                        presupuesto_estimado REAL,
+                        numero_recursos REAL,
+                        tecnologias TEXT,
+                        complejidad TEXT,
+                        experiencia_equipo REAL,
+                        hitos_clave REAL,
+                        costo_real REAL,
+                        duracion_real REAL,
+                        riesgo_general TEXT,
+                        estado TEXT DEFAULT 'ejecucion'
+                    )
+                ''')
+                conn.commit()
+    except Exception as e:
+        print(f"Error inicializando base de datos Postgres: {e}")
 
 init_db()
 
 def _save_audit_log(proyecto_dict: dict, prediction_result: dict):
+    if not DB_URL: return
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO auditoria_predicciones (
-                    tipo_proyecto, metodologia, duracion_estimacion, presupuesto_estimado, 
-                    numero_recursos, tecnologias, complejidad, experiencia_equipo, hitos_clave,
-                    riesgo_general, probabilidad_sobrecosto, probabilidad_retraso
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                proyecto_dict.get('tipo_proyecto'), proyecto_dict.get('metodologia'),
-                proyecto_dict.get('duracion_estimacion'), proyecto_dict.get('presupuesto_estimado'),
-                proyecto_dict.get('numero_recursos'), proyecto_dict.get('tecnologias'),
-                proyecto_dict.get('complejidad'), proyecto_dict.get('experiencia_equipo'),
-                proyecto_dict.get('hitos_clave'), prediction_result.get('riesgo_general'),
-                prediction_result.get('probabilidad_sobrecosto', 0), prediction_result.get('probabilidad_retraso', 0)
-            ))
-            conn.commit()
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    INSERT INTO auditoria_predicciones (
+                        tipo_proyecto, metodologia, duracion_estimacion, presupuesto_estimado, 
+                        numero_recursos, tecnologias, complejidad, experiencia_equipo, hitos_clave,
+                        riesgo_general, probabilidad_sobrecosto, probabilidad_retraso
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ''', (
+                    proyecto_dict.get('tipo_proyecto'), proyecto_dict.get('metodologia'),
+                    proyecto_dict.get('duracion_estimacion'), proyecto_dict.get('presupuesto_estimado'),
+                    proyecto_dict.get('numero_recursos'), proyecto_dict.get('tecnologias'),
+                    proyecto_dict.get('complejidad'), proyecto_dict.get('experiencia_equipo'),
+                    proyecto_dict.get('hitos_clave'), prediction_result.get('riesgo_general'),
+                    prediction_result.get('probabilidad_sobrecosto', 0), prediction_result.get('probabilidad_retraso', 0)
+                ))
+                conn.commit()
     except Exception as e:
         print(f"Error saving audit log: {e}")
 
@@ -240,66 +256,74 @@ def update_opciones_formulario(new_data: dict):
 @app.post('/proyectos-ejecucion')
 def add_proyecto_ejecucion(proyecto: dict):
     proyecto_id = str(uuid.uuid4())
+    if not DB_URL: return {"status": "ok", "id": proyecto_id}
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO proyectos_ejecucion (
-                    id, tipo_proyecto, metodologia, duracion_estimacion, presupuesto_estimado,
-                    numero_recursos, tecnologias, complejidad, experiencia_equipo, hitos_clave
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                proyecto_id, proyecto.get('tipo_proyecto'), proyecto.get('metodologia'),
-                proyecto.get('duracion_estimacion'), proyecto.get('presupuesto_estimado'),
-                proyecto.get('numero_recursos'), proyecto.get('tecnologias'),
-                proyecto.get('complejidad'), proyecto.get('experiencia_equipo'),
-                proyecto.get('hitos_clave')
-            ))
-            conn.commit()
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    INSERT INTO proyectos_ejecucion (
+                        id, tipo_proyecto, metodologia, duracion_estimacion, presupuesto_estimado,
+                        numero_recursos, tecnologias, complejidad, experiencia_equipo, hitos_clave
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ''', (
+                    proyecto_id, proyecto.get('tipo_proyecto'), proyecto.get('metodologia'),
+                    proyecto.get('duracion_estimacion'), proyecto.get('presupuesto_estimado'),
+                    proyecto.get('numero_recursos'), proyecto.get('tecnologias'),
+                    proyecto.get('complejidad'), proyecto.get('experiencia_equipo'),
+                    proyecto.get('hitos_clave')
+                ))
+                conn.commit()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     return {"status": "ok", "id": proyecto_id}
 
 @app.get('/proyectos-ejecucion')
 def list_proyectos_ejecucion():
+    if not DB_URL: return []
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM proyectos_ejecucion")
-            rows = cursor.fetchall()
-            return [dict(row) for row in rows]
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("SELECT * FROM proyectos_ejecucion")
+                rows = cursor.fetchall()
+                # Remove datetime elements to prevent JSON serialization issues if needed
+                for r in rows:
+                    if 'fecha_creacion' in r and r['fecha_creacion']:
+                        r['fecha_creacion'] = r['fecha_creacion'].isoformat()
+                return [dict(row) for row in rows]
     except Exception as e:
         return []
 
 @app.get('/proyectos-ejecucion/{proy_id}')
 def get_proyecto_ejecucion(proy_id: str):
+    if not DB_URL: raise HTTPException(status_code=404, detail='Proyecto no encontrado')
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM proyectos_ejecucion WHERE id = ?", (proy_id,))
-            row = cursor.fetchone()
-            if row:
-                return dict(row)
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("SELECT * FROM proyectos_ejecucion WHERE id = %s", (proy_id,))
+                row = cursor.fetchone()
+                if row:
+                    if 'fecha_creacion' in row and row['fecha_creacion']:
+                        row['fecha_creacion'] = row['fecha_creacion'].isoformat()
+                    return dict(row)
     except Exception:
         pass
     raise HTTPException(status_code=404, detail='Proyecto no encontrado')
 
 @app.put('/proyectos-ejecucion/{proy_id}')
 def update_proyecto_ejecucion(proy_id: str, datos: dict):
+    if not DB_URL: return {"status": "ok"}
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            set_clause = ", ".join([f"{k} = ?" for k in datos.keys()])
-            values = list(datos.values())
-            values.append(proy_id)
-            
-            cursor.execute(f"UPDATE proyectos_ejecucion SET {set_clause} WHERE id = ?", values)
-            if cursor.rowcount == 0:
-                raise HTTPException(status_code=404, detail='Proyecto no encontrado')
-            conn.commit()
-            return {"status": "ok"}
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                set_clause = ", ".join([f"{k} = %s" for k in datos.keys()])
+                values = list(datos.values())
+                values.append(proy_id)
+                
+                cursor.execute(f"UPDATE proyectos_ejecucion SET {set_clause} WHERE id = %s", values)
+                if cursor.rowcount == 0:
+                    raise HTTPException(status_code=404, detail='Proyecto no encontrado')
+                conn.commit()
+                return {"status": "ok"}
     except HTTPException:
         raise
     except Exception as e:
@@ -307,35 +331,35 @@ def update_proyecto_ejecucion(proy_id: str, datos: dict):
 
 @app.post('/proyectos-ejecucion/{proy_id}/finalizar')
 def finalizar_proyecto(proy_id: str, datos_finales: dict):
+    if not DB_URL: return {"status": "ok"}
     # Retrieve the project first
     proyecto = None
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM proyectos_ejecucion WHERE id = ?", (proy_id,))
-            row = cursor.fetchone()
-            if row:
-                proyecto = dict(row)
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("SELECT * FROM proyectos_ejecucion WHERE id = %s", (proy_id,))
+                row = cursor.fetchone()
+                if row:
+                    proyecto = dict(row)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error en base de datos")
 
     if not proyecto:
         raise HTTPException(status_code=404, detail='Proyecto no encontrado')
     
-    # Update SQLite state
+    # Update state
     try:
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE proyectos_ejecucion 
-                SET costo_real = ?, duracion_real = ?, riesgo_general = ?, estado = 'finalizado'
-                WHERE id = ?
-            """, (
-                datos_finales.get('costo_real'), datos_finales.get('duracion_real'),
-                datos_finales.get('riesgo_general', proyecto.get('riesgo_general')), proy_id
-            ))
-            conn.commit()
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE proyectos_ejecucion 
+                    SET costo_real = %s, duracion_real = %s, riesgo_general = %s, estado = 'finalizado'
+                    WHERE id = %s
+                """, (
+                    datos_finales.get('costo_real'), datos_finales.get('duracion_real'),
+                    datos_finales.get('riesgo_general', proyecto.get('riesgo_general')), proy_id
+                ))
+                conn.commit()
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error actualizando proyecto")
     

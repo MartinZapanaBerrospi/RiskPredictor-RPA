@@ -89,13 +89,14 @@ El sistema sigue una arquitectura **cliente-servidor** con tres capas principale
 - Probabilidades detalladas para sobrecosto y retraso.
 - Gráficos de distribución de probabilidades generados con `matplotlib`.
 
-### Arquitectura de Datos (Migración a SQLite)
+### Arquitectura de Datos (Supabase PostgreSQL)
 
-Para garantizar la integridad y persistencia de las evaluaciones (especialmente en entornos de despliegue en la nube como Render), el proyecto almacena sus registros en una base de datos relacional nativa en SQLite (`data/riesgos.db`).
+Para garantizar la integridad y persistencia de las evaluaciones en la nube, el proyecto almacena sus registros en una base de datos relacional PostgreSQL profesional alojada en **Supabase**.
 
-- **Log de Auditoría Automatizado:** Cada vez que el modelo genera una predicción exitosa a través de la API, el backend captura de forma automática todos los parámetros ingresados en una tabla oculta llamada `auditoria_predicciones`.
+- **Log de Auditoría Automatizado:** Cada vez que el modelo genera una predicción exitosa a través de la API, el backend captura de forma automática todos los parámetros ingresados en una tabla oculta nativa de Postgres llamada `auditoria_predicciones`.
 - **Registro de Proyectos:** Los usuarios pueden utilizar el botón **"Guardar Evaluación"** en la interfaz para hacer seguimiento manual del proyecto, insertándolo en la tabla `proyectos_ejecucion`. Esta data alimenta al proyecto cuando culmina para mejorar el modelo empíricamente.
-- _Nota:_ Archivos CSV heredados (`dataset.csv`) se siguen exportando/manteniendo a la par únicamente para el pipeline de reentrenamiento artificial inicial con `train_xgboost.py`.
+- _Nota:_ Para conectar la base de datos debes proveer la clave `DATABASE_URL` mediante un archivo `.env` o en las variables de entorno de tu servidor de producción (revisar `.env.example`).
+- _Legado:_ Archivos CSV heredados (`dataset.csv`) se siguen exportando/manteniendo a la par únicamente para el pipeline de reentrenamiento artificial inicial con `train_xgboost.py`.
 
 ---
 
