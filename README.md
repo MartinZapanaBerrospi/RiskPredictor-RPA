@@ -402,14 +402,22 @@ npm run dev
 
 ### 4. Despliegue en Producción (Backend API)
 
-El proyecto está pre-configurado para un despliegue gratuito y directo en **[Render](https://render.com/)**, para que el Frontend estático en GitHub Pages pueda conectarse a una API real.
+Para que el Frontend estático en GitHub Pages pueda conectarse a una API real, puedes desplegar el backend de forma 100% gratuita y **sin tarjeta de crédito** en **[Render](https://render.com/)**, pero debes hacerlo manualmente desde su panel Web Service (no mediante Blueprints).
 
 1. Crea una cuenta en Render conectada a tu GitHub.
-2. Crea un nuevo **"Web Service"** y conecta este repositorio.
-3. Render detectará automáticamente la configuración usando el archivo `render.yaml` incluido en el proyecto.
-4. Render instalará el entorno y lanzará la API automáticamente usando `gunicorn` (gracias al blueprint de Render).
+2. En el panel, haz clic en el botón **"New +"** y selecciona **"Web Service"**.
+   _(🚨 Es muy importante que elijas Web Service y NO "Blueprint", ya que la opción Blueprint ahora requiere ingresar una tarjeta de crédito incluso para cuentas gratuitas)._
+3. Selecciona la opción **"Build and deploy from a Git repository"** y conecta este repositorio (`RiskPredictor-RPA`).
+4. En la configuración del servicio, asegúrate de llenar estos campos:
+   - **Environment:** `Python 3`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `gunicorn api.main:app -w 4 -k uvicorn.workers.UvicornWorker`
+5. En la sección de Environment Variables, añade:
+   - `PYTHON_VERSION`: `3.12.0`
+   - `FRONTEND_URL`: `https://martinzapanaberrospi.github.io`
+6. En **Instance Type**, asegúrate de elegir el plan **Free** ($0/month) y haz clic en "Create Web Service".
 
-> **Nota:** La URL pública que te asigne Render (ej. `https://tu-api.onrender.com`) será el nuevo endpoint al que el Frontend enviará las predicciones. Este proyecto ya viene reconfigurado con los permisos de CORS necesarios.
+> **Nota:** La URL pública que te asigne Render (ej. `https://tu-api.onrender.com`) será el nuevo endpoint. El proyecto ya viene reconfigurado con los permisos de CORS necesarios.
 
 ### 5. (Opcional) MailHog para emails
 
