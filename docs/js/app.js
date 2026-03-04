@@ -55,10 +55,10 @@ document.getElementById('predictionForm').addEventListener('submit', async (e) =
     btnText.style.display = 'none';
     loader.style.display = 'block';
 
+    // Determinar si corre local para fetch al backend o si está en github pages
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
     try {
-        // Solo intentar conectar al backend si estamos en localhost
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        
         if (isLocalhost) {
             const response = await fetch('http://localhost:8000/predict', {
                 method: 'POST',
