@@ -156,8 +156,9 @@ Para garantizar la integridad corporativa y la escalabilidad, el sistema divide 
 
 ### 4. 📧 Envío de Reportes por Email
 
-- Integración con MailHog para envío de reportes PDF como adjunto
-- Funciona tanto desde el formulario principal como desde la tabla de proyectos
+- Integración nativa con **Brevo HTTP API** para envío de reportes PDF de forma instantánea.
+- No utiliza puertos SMTP tradicionales, evitando bloqueos en entornos cloud (como Render).
+- Envía un correo con diseño profesional en HTML y el PDF adjunto.
 
 ### 5. 🔄 Reentrenamiento de Modelos
 
@@ -165,10 +166,11 @@ Para garantizar la integridad corporativa y la escalabilidad, el sistema divide 
 - Ejecuta `train_xgboost.py` vía subprocess
 - Recarga automáticamente los modelos en memoria después del reentrenamiento
 
-### 6. 🌗 Tema Claro/Oscuro
+### 6. 🌗 Diseño UI/UX Premium (Glassmorphism)
 
-- Toggle persistente con localStorage
-- Diseño adaptado para ambos modos
+- Interfaz completamente rediseñada bajo la tendencia **Glassmorphism** (fondos translúcidos, desenfoque, bordes sutiles).
+- Componentes modales avanzados con animaciones elásticas y retroalimentación interactiva (Toasts centrados y superiores).
+- **Tema Claro/Oscuro** persistente con `localStorage`, adaptando paletas de colores corporativos (Azul/Índigo en modo oscuro, Blanco/Gris en modo claro) de forma fluida.
 
 ---
 
@@ -342,11 +344,11 @@ Base URL: `http://localhost:8000`
 
 ### Reportes y Utilidades
 
-| Método | Endpoint                  | Descripción                              |
-| :----- | :------------------------ | :--------------------------------------- |
-| `POST` | `/generar-reporte`        | Genera y descarga PDF de riesgo          |
-| `POST` | `/enviar-reporte-mailhog` | Genera PDF y lo envía por email          |
-| `POST` | `/reentrenar-modelo`      | Reentrena modelos con datos actualizados |
+| Método | Endpoint                  | Descripción                                |
+| :----- | :------------------------ | :----------------------------------------- |
+| `POST` | `/generar-reporte`        | Genera y descarga PDF de riesgo            |
+| `POST` | `/enviar-reporte-mailhog` | Genera PDF y lo envía vía Brevo HTTP API   |
+| `POST` | `/reentrenar-modelo`      | Reentrena modelos (requiere entorno local) |
 
 > 📖 Documentación interactiva automática disponible en: `http://localhost:8000/docs`
 
@@ -439,15 +441,16 @@ Dado que la aplicación es una Single Page Application (SPA) construida con Vite
    - Agrega `VITE_API_URL` y pon como valor la URL pública que te dio Render (ej. `https://riskpredictor-api.onrender.com`).
 6. Haz clic en **Deploy**. ¡Tu aplicación completa y funcional con base de datos estará en vivo!
 
-### 5. (Opcional) MailHog para emails
+### 5. Configuración de Email (Brevo HTTP API)
 
-Para la funcionalidad de envío de reportes por email, instalar y ejecutar [MailHog](https://github.com/mailhog/MailHog):
+El sistema utiliza **Brevo** (anteriormente Sendinblue) para el envío de reportes PDF por email, sin depender de puertos SMTP (que suelen ser bloqueados en servidores cloud como Render).
 
-```bash
-# Descargar e iniciar MailHog
-# Interfaz web en http://localhost:8025
-# Servidor SMTP en localhost:1025
-```
+1. Crea una cuenta gratuita en [brevo.com](https://www.brevo.com/) (permite 300 emails/día gratis).
+2. Verifica tu correo remitente en **Settings → Senders**.
+3. Genera una API Key en **Settings → SMTP & API → API Keys**.
+4. En tu servidor (Render o `.env` local), configura las siguientes variables:
+   - `BREVO_API_KEY`: Tu API Key generada.
+   - `SMTP_EMAIL`: El correo remitente verificado en el paso 2.
 
 ---
 
@@ -455,23 +458,29 @@ Para la funcionalidad de envío de reportes por email, instalar y ejecutar [Mail
 
 ### Predicción de Riesgo
 
-1. En el formulario principal, seleccionar el tipo de proyecto, metodología y demás parámetros
-2. Hacer clic en **"Predecir Riesgo"**
-3. Se mostrará un modal con el resultado: riesgo general, probabilidades, sobrecosto y retraso
-4. Desde el modal se puede **descargar el reporte PDF** o **enviarlo por email**
+1. En el formulario principal, selecciona el tipo de proyecto, metodología y demás características (incluyendo tecnologías base).
+2. Haz clic en **"Generar Predicción"**. El sistema validará los datos y consultará el motor analítico.
+3. Se mostrará un modal interactivo con el resultado: riesgo general (etiqueta dinámica), probabilidades (barras de progreso), probabilidad de sobrecosto y retraso.
+4. Acciones disponibles en el modal:
+   - **💾 Guardar Proyecto**: Registra los datos del proyecto y la predicción en la base de datos (Supabase) para seguimiento.
+   - **📄 Descargar reporte PDF**: Genera y descarga un reporte formal al instante.
+   - **📧 Enviar por Email**: Solicita un correo destinatario, genera el archivo PDF en el servidor, y lo envía adjunto con un diseño corporativo vía Brevo.
 
-### Gestión de Proyectos
+### Gestión de Proyectos en Ejecución
 
-1. Después de predecir, hacer clic en **"Guardar en Ejecución"** para registrar el proyecto
-2. Acceder a **"Ver Proyectos en Ejecución"** para ver la tabla con todos los proyectos activos
-3. Desde la tabla, se pueden **editar**, **eliminar**, **predecir nuevamente**, **enviar reportes** o **finalizar** proyectos
-4. Al **finalizar** un proyecto, se registran los datos finales (costo real, duración real, riesgo) que alimentan el dataset de entrenamiento
+1. Ve a la vista **"Ver Proyectos en Ejecución"** para administrar los proyectos previamente guardados desde el dashboard de predicción.
+2. La vista presenta una tabla horizontal escalable (con scroll responsivo) que lista todos los proyectos activos.
+3. Desde la tabla, se pueden **editar**, **eliminar**, **enviar reportes por email** o **finalizar** proyectos.
+4. Al **finalizar (🎯)** un proyecto, se solicitan los valores reales finales (costo real, duración real). Esta información histórica es la que se usará para retroalimentar y mejorar los modelos predictivos en el futuro.
 
-### Reentrenamiento
+### Reentrenamiento del Motor (Modo Administrador)
 
-1. Hacer clic en **"Reentrenar modelo"** en la vista principal
-2. El sistema ejecutará el script de entrenamiento con los datos actualizados
-3. Los modelos se recargarán en memoria automáticamente
+Debido a que el entrenamiento de modelos de Machine Learning requiere alta capacidad de cómputo (memoria RAM/CPU), esta acción debe realizarse en un **entorno local o servidor dedicado**, y no desde la UI pública desplegada en cuentas de capa gratuita (Render Free Tier):
+
+1. Descarga la data histórica de proyectos `finalizados` desde tu base de datos Supabase.
+2. Inyéctala en `data/dataset.csv`.
+3. Ejecuta en terminal: `python models/train_xgboost.py` para generar los nuevos algoritmos (`.pkl`).
+4. Haz _commit & push_ de los nuevos `.pkl` al repositorio para actualizar el sistema en la nube.
 
 ---
 
