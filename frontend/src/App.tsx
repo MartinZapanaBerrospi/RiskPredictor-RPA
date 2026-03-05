@@ -53,7 +53,6 @@ function App() {
   const [modalRiesgoOpen, setModalRiesgoOpen] = useState(false);
   const [resultadoRiesgo, setResultadoRiesgo] = useState<any>(null);
   const [formPrediccion, setFormPrediccion] = useState<any>(null);
-  const [retrainStatus, setRetrainStatus] = useState('');
   const [toast, setToast] = useState<{message: string, type?: 'success'|'error'}|null>(null);
 
   useEffect(() => {
@@ -112,23 +111,6 @@ function App() {
     setFormPrediccion(null);
   };
 
-  const handleRetrain = async () => {
-    setRetrainStatus('Reentrenando...');
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/reentrenar-modelo`, { method: 'POST' });
-      const data = await res.json();
-      if (data.status === 'ok') {
-        setRetrainStatus('¡Reentrenamiento completado!');
-        setToast({ message: 'Modelo reentrenado correctamente', type: 'success' });
-      } else {
-        setRetrainStatus('Error al reentrenar');
-        setToast({ message: 'Error al reentrenar el modelo', type: 'error' });
-      }
-    } catch {
-      setRetrainStatus('Error de red');
-      setToast({ message: 'Error de red al reentrenar', type: 'error' });
-    }
-  };
 
   if (view === 'proyectos') {
     return (
@@ -148,11 +130,7 @@ function App() {
         <div className="navbar-actions">
           <button onClick={() => setView('proyectos')} className="btn-ghost">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            <span className="hide-mobile">Ver Proyectos</span>
-          </button>
-          <button onClick={handleRetrain} className="btn-ghost">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.44l5.36-1.55"/></svg>
-            <span className="hide-mobile">Reentrenar Modelo</span>
+            <span className="hide-mobile">Proyectos</span>
           </button>
           <ThemeToggle />
         </div>
@@ -164,12 +142,6 @@ function App() {
           <p className="subtitle">Configura los parámetros del proyecto TI para generar una predicción impulsada por Inteligencia Artificial (XGBoost).</p>
         </div>
         
-        {retrainStatus && (
-          <div className={`status-banner ${retrainStatus.includes('Error') ? 'error' : 'success'}`}>
-             {retrainStatus}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="risk-form">
         <div className="form-group">
           <label>Tipo de Proyecto:
