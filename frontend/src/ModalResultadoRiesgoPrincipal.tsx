@@ -40,6 +40,8 @@ function getBarColor(value: number): string {
 const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClose, resultado, proyecto }) => {
   const [modalEmailOpen, setModalEmailOpen] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
+  const [savingProject, setSavingProject] = useState(false);
+  const [projectSaved, setProjectSaved] = useState(false);
   const [toast, setToast] = useState<{message: string, type: 'success'|'error'}|null>(null);
 
   const handleSendEmail = async (email: string) => {
@@ -74,6 +76,37 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
       setToast({ message: e.message || 'Error al enviar email', type: 'error' });
     } finally {
       setLoadingEmail(false);
+    }
+  };
+
+  const handleSaveProject = async () => {
+    setSavingProject(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/proyectos-ejecucion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...proyecto,
+          tecnologias: Array.isArray(proyecto.tecnologias)
+            ? proyecto.tecnologias.join(',')
+            : (typeof proyecto.tecnologias === 'string' ? proyecto.tecnologias : ''),
+          duracion_estimacion: Number(proyecto.duracion_estimacion),
+          presupuesto_estimado: Number(proyecto.presupuesto_estimado),
+          numero_recursos: Number(proyecto.numero_recursos),
+          experiencia_equipo: Number(proyecto.experiencia_equipo),
+          hitos_clave: Number(proyecto.hitos_clave),
+        })
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || 'Error al guardar proyecto');
+      }
+      setToast({ message: 'Proyecto guardado exitosamente', type: 'success' });
+      setProjectSaved(true);
+    } catch (e: any) {
+      setToast({ message: e.message || 'Error al guardar', type: 'error' });
+    } finally {
+      setSavingProject(false);
     }
   };
 
@@ -145,6 +178,18 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
                   {(resultado.probabilidad_retraso * 100).toFixed(1)}%
                 </span>
               </div>
+            </div>
+
+            {/* Save Project */}
+            <div className="modal-resultado-actions" style={{ marginBottom: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn-save-project"
+                onClick={handleSaveProject}
+                disabled={savingProject || projectSaved}
+              >
+                {projectSaved ? '✅ Guardado' : savingProject ? '⏳ Guardando...' : '💾 Guardar Proyecto'}
+              </button>
             </div>
 
             {/* Actions */}
