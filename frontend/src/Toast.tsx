@@ -19,27 +19,27 @@ const Toast: React.FC<ToastProps> = ({ message, type = "success", onClose, detai
     <div
       style={{
         position: "fixed",
-        top: 24,
-        right: 24,
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
         zIndex: 99999,
-        minWidth: 300,
-        maxWidth: 420,
+        minWidth: 320,
+        maxWidth: 440,
         background: isSuccess
-          ? "linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.95))"
-          : "linear-gradient(135deg, rgba(239,68,68,0.95), rgba(220,38,38,0.95))",
-        backdropFilter: "blur(12px)",
+          ? "linear-gradient(135deg, #059669, #10b981)"
+          : "linear-gradient(135deg, #dc2626, #ef4444)",
         color: "white",
-        padding: "16px 20px",
-        borderRadius: 12,
+        padding: "20px 24px",
+        borderRadius: 16,
         boxShadow: isSuccess
-          ? "0 8px 32px rgba(16,185,129,0.3), 0 2px 8px rgba(0,0,0,0.1)"
-          : "0 8px 32px rgba(239,68,68,0.3), 0 2px 8px rgba(0,0,0,0.1)",
+          ? "0 20px 60px rgba(16,185,129,0.4), 0 4px 16px rgba(0,0,0,0.15)"
+          : "0 20px 60px rgba(239,68,68,0.4), 0 4px 16px rgba(0,0,0,0.15)",
         cursor: "pointer",
-        animation: "toastSlideIn 0.35s cubic-bezier(0.16,1,0.3,1)",
         display: "flex",
-        alignItems: "flex-start",
-        gap: 12,
+        alignItems: "center",
+        gap: 14,
         fontFamily: "'Inter', sans-serif",
+        animation: "toastPop 0.3s cubic-bezier(0.16,1,0.3,1)",
       }}
       onClick={onClose}
       role="alert"
@@ -47,39 +47,33 @@ const Toast: React.FC<ToastProps> = ({ message, type = "success", onClose, detai
     >
       {/* Icon */}
       <div style={{
-        width: 28, height: 28, borderRadius: 8,
+        width: 36, height: 36, borderRadius: 10,
         background: "rgba(255,255,255,0.2)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        flexShrink: 0, marginTop: 1,
-        fontSize: 14, fontWeight: 700,
+        flexShrink: 0, fontSize: 18, fontWeight: 700,
       }}>
         {isSuccess ? "✓" : "✕"}
       </div>
 
       {/* Content */}
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.4 }}>
+        <div style={{ fontWeight: 700, fontSize: 15, lineHeight: 1.4 }}>
           {message}
         </div>
         {details && (
-          <div style={{ fontSize: 13, opacity: 0.85, marginTop: 4, lineHeight: 1.3 }}>
+          <div style={{ fontSize: 13, opacity: 0.85, marginTop: 4 }}>
             {details}
           </div>
         )}
-      </div>
-
-      {/* Close */}
-      <div style={{
-        opacity: 0.6, fontSize: 16, marginTop: -2,
-        flexShrink: 0, fontWeight: 300,
-      }}>
-        ✕
+        <div style={{ fontSize: 12, opacity: 0.6, marginTop: 6 }}>
+          Clic para cerrar
+        </div>
       </div>
 
       <style>{`
-        @keyframes toastSlideIn {
-          from { opacity: 0; transform: translateX(40px) scale(0.96); }
-          to { opacity: 1; transform: translateX(0) scale(1); }
+        @keyframes toastPop {
+          from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+          to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
       `}</style>
     </div>
