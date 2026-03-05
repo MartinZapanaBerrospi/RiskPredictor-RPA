@@ -99,7 +99,7 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
   const [proyectoFinalizar, setProyectoFinalizar] = useState<Proyecto | null>(null);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/proyectos-ejecucion')
+    fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/proyectos-ejecucion')
       .then(res => res.json())
       .then(setProyectos)
       .catch(() => setError('Error al cargar proyectos en ejecución'));
@@ -128,7 +128,7 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
     setError('');
     setSuccess('');
     try {
-      const res = await fetch(`http://127.0.0.1:8000/proyectos-ejecucion/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/proyectos-ejecucion/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Error al eliminar proyecto');
@@ -152,7 +152,7 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
     setError('');
     setSuccess('');
     try {
-      const res = await fetch(`http://127.0.0.1:8000/proyectos-ejecucion/${proyectoActualizado.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/proyectos-ejecucion/${proyectoActualizado.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(proyectoActualizado),
@@ -174,7 +174,7 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
     setProyectoRiesgo(proyecto);
     setModalRiesgoOpen(true);
     try {
-      const res = await fetch('http://127.0.0.1:8000/predict', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -204,7 +204,7 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
     if (!proyectoEmail) return;
     setLoadingEmail(true);
     try {
-      const response = await fetch('http://127.0.0.1:8000/enviar-reporte-mailhog', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/enviar-reporte-mailhog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -242,7 +242,7 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
     setError('');
     setSuccess('');
     try {
-      const res = await fetch(`http://127.0.0.1:8000/proyectos-ejecucion/${id}/finalizar`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/proyectos-ejecucion/${id}/finalizar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

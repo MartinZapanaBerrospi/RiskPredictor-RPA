@@ -7,7 +7,7 @@ type Props = {
 const ReportePDFButton: React.FC<Props> = ({ formData }) => {
   const handleGenerarReporte = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/generar-reporte", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/generar-reporte", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

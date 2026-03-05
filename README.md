@@ -9,9 +9,7 @@
 [![Vite](https://img.shields.io/badge/Vite-6.x-646cff?logo=vite&logoColor=white)](https://vitejs.dev)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> 🌐 **[Ver Demo en Vivo →](https://martinzapanaberrospi.github.io/RiskPredictor-RPA/)**
-
----
+> ⚡ **Despliegue Full-Stack:** Backend (FastAPI + Supabase) y Frontend (React SPA). Ver guía de despliegue en Vercel y Render en la sección de Instalación.
 
 ## 📋 Tabla de Contenidos
 
@@ -214,9 +212,6 @@ RiskPredictor-RPA/
 │   ├── reporte_profesional.py        # Generación de PDFs (clase PDFReport)
 │   └── email_mailhog.py             # Envío de emails con adjunto PDF
 │
-├── docs/                             # GitHub Pages - Página del proyecto
-│   └── index.html
-│
 ├── requirements.txt                  # Dependencias Python
 ├── .gitignore                        # Archivos excluidos de git
 └── README.md                         # Esta documentación
@@ -416,24 +411,33 @@ npm run dev
 
 > El frontend estará disponible en `http://localhost:5173`
 
-### 4. Despliegue en Producción (Backend API)
+### 4. Despliegue en Producción (Backend API) en Render
 
-Para que el Frontend estático en GitHub Pages pueda conectarse a una API real, puedes desplegar el backend de forma 100% gratuita y **sin tarjeta de crédito** en **[Render](https://render.com/)**, pero debes hacerlo manualmente desde su panel Web Service (no mediante Blueprints).
+Para que tu Frontend en React pueda conectarse a la API pública, puedes desplegar el backend (FastAPI) de forma gratuita en **[Render](https://render.com/)**:
 
 1. Crea una cuenta en Render conectada a tu GitHub.
-2. En el panel, haz clic en el botón **"New +"** y selecciona **"Web Service"**.
-   _(🚨 Es muy importante que elijas Web Service y NO "Blueprint", ya que la opción Blueprint ahora requiere ingresar una tarjeta de crédito incluso para cuentas gratuitas)._
-3. Selecciona la opción **"Build and deploy from a Git repository"** y conecta este repositorio (`RiskPredictor-RPA`).
-4. En la configuración del servicio, asegúrate de llenar estos campos:
+2. Crea un **"New Web Service"** (elige la opción manual gratuita, no Blueprint).
+3. Conecta este repositorio (`RiskPredictor-RPA`).
+4. Configuración:
    - **Environment:** `Python 3`
    - **Build Command:** `pip install -r requirements.txt`
    - **Start Command:** `gunicorn api.main:app -w 4 -k uvicorn.workers.UvicornWorker`
-5. En la sección de Environment Variables, añade:
+5. Variables de Entorno (Environment Variables):
    - `PYTHON_VERSION`: `3.12.0`
-   - `FRONTEND_URL`: `https://martinzapanaberrospi.github.io`
-6. En **Instance Type**, asegúrate de elegir el plan **Free** ($0/month) y haz clic en "Create Web Service".
+   - `DATABASE_URL`: Tu conexión a Supabase PostgreSQL.
+   - `FRONTEND_URL`: URL de tu frontend en Vercel (ej: `https://mi-app-react.vercel.app`) para habilitar CORS de forma segura.
 
-> **Nota:** La URL pública que te asigne Render (ej. `https://tu-api.onrender.com`) será el nuevo endpoint. El proyecto ya viene reconfigurado con los permisos de CORS necesarios.
+### 5. Despliegue en Producción (Frontend React) en Vercel
+
+Dado que la aplicación es una Single Page Application (SPA) construida con Vite, **[Vercel](https://vercel.com/)** es el hosting ideal y gratuito:
+
+1. Crea una cuenta en Vercel con tu cuenta de GitHub.
+2. Haz clic en **"Add New Project"** e importa el repositorio `RiskPredictor-RPA`.
+3. Configuración del Framework: Vercel autodetectará que es un proyecto de Vite.
+4. **Root Directory:** Haz clic en Editar y selecciona `frontend`.
+5. Variables de Entorno (Environment Variables):
+   - Agrega `VITE_API_URL` y pon como valor la URL pública que te dio Render (ej. `https://riskpredictor-api.onrender.com`).
+6. Haz clic en **Deploy**. ¡Tu aplicación completa y funcional con base de datos estará en vivo!
 
 ### 5. (Opcional) MailHog para emails
 

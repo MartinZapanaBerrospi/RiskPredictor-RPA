@@ -35,7 +35,7 @@ const ModalEditarProyecto: React.FC<ModalEditarProyectoProps> = ({ proyecto, ope
   }, [proyecto]);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/opciones-formulario')
+    fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/opciones-formulario')
       .then(res => res.json())
       .then(setOpciones)
       .catch(() => setOpciones(opcionesDefault));
