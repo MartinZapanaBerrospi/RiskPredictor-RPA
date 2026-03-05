@@ -58,7 +58,7 @@ function App() {
   const [toast, setToast] = useState<{message: string, type?: 'success'|'error'}|null>(null);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/opciones-formulario')
+    fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/opciones-formulario`)
       .then(res => res.json())
       .then(setOpciones);
   }, []);
@@ -82,7 +82,7 @@ function App() {
     setError('');
     setResultadoRiesgo(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/predict', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -113,7 +113,7 @@ function App() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/proyectos-ejecucion', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/proyectos-ejecucion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -146,7 +146,7 @@ function App() {
   const handleRetrain = async () => {
     setRetrainStatus('Reentrenando...');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000')}/reentrenar-modelo', { method: 'POST' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/reentrenar-modelo`, { method: 'POST' });
       const data = await res.json();
       if (data.status === 'ok') {
         setRetrainStatus('¡Reentrenamiento completado!');
