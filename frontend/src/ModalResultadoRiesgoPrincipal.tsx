@@ -146,7 +146,7 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
               <p style={{
                 fontSize: '0.8rem',
                 fontWeight: 600,
-                color: '#94a3b8',
+                color: 'var(--text-muted)',
                 textTransform: 'uppercase' as const,
                 letterSpacing: '0.5px',
                 marginBottom: '0.8rem',
@@ -161,11 +161,11 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
                     marginBottom: '0.3rem',
                     fontFamily: '"Inter", monospace',
                   }}>
-                    <span style={{ color: '#cbd5e1', textTransform: 'capitalize' as const }}>{key}</span>
+                    <span style={{ color: 'var(--text-primary)', textTransform: 'capitalize' as const }}>{key}</span>
                     <span style={{ color: getBarColor(value), fontWeight: 700 }}>{(value * 100).toFixed(1)}%</span>
                   </div>
                   <div style={{
-                    background: 'rgba(255,255,255,0.05)',
+                    background: 'var(--border-color)',
                     height: 8,
                     borderRadius: 4,
                     overflow: 'hidden',
@@ -196,7 +196,7 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
                 padding: '1rem',
                 textAlign: 'center',
               }}>
-                <p style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' as const, margin: '0 0 4px' }}>Sobrecosto</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' as const, margin: '0 0 4px' }}>Sobrecosto</p>
                 <p style={{ color: getBarColor(resultado.probabilidad_sobrecosto), fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>
                   {(resultado.probabilidad_sobrecosto * 100).toFixed(1)}%
                 </p>
@@ -208,7 +208,7 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
                 padding: '1rem',
                 textAlign: 'center',
               }}>
-                <p style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' as const, margin: '0 0 4px' }}>Retraso</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' as const, margin: '0 0 4px' }}>Retraso</p>
                 <p style={{ color: getBarColor(resultado.probabilidad_retraso), fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>
                   {(resultado.probabilidad_retraso * 100).toFixed(1)}%
                 </p>
@@ -229,8 +229,8 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
                 style={{
                   flex: 1,
                   background: 'transparent',
-                  border: '1px solid rgba(148, 163, 184, 0.2)',
-                  color: '#cbd5e1',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
                   padding: '0.7rem 1rem',
                   borderRadius: 8,
                   cursor: 'pointer',

@@ -329,15 +329,28 @@ export default function ProyectosEjecucion({ onBack }: ProyectosEjecucionProps) 
                   <td>{p.experiencia_equipo || '-'}</td>
                   <td>{p.hitos_clave || '-'}</td>
                   <td>
-                    <button className="crud-btn" onClick={() => handleEdit(p.id)} disabled={loading} title="Editar"><IconEdit /></button>
-                    <button className="crud-btn delete" onClick={() => handleDelete(p.id)} disabled={loading} title="Eliminar"><IconDelete /></button>
-                    <button className="crud-btn save" onClick={() => handlePredecir(p)} disabled={loading} title="Predecir"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V6M5 12l7-7 7 7"/></svg></button>
-                    <button className="crud-btn email" onClick={() => handleEnviarEmail(p)} disabled={loading} title="Enviar reporte por email" style={{marginLeft: 4}}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
-                    </button>
-                    <button className="crud-btn" onClick={() => { setProyectoFinalizar(p); setModalFinalizarOpen(true); }} disabled={loading} title="Finalizar" style={{marginLeft: 4, color: '#005fa3', display: 'inline-flex', alignItems: 'center', gap: 4}}>
-                      <IconGoal />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', flexWrap: 'nowrap' }}>
+                      <button onClick={() => handleEdit(p.id)} disabled={loading} title="Editar"
+                        style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: 'none', borderRadius: 6, padding: '0.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 32, height: 32 }}>
+                        <IconEdit />
+                      </button>
+                      <button onClick={() => handleDelete(p.id)} disabled={loading} title="Eliminar"
+                        style={{ background: 'rgba(244,63,94,0.15)', color: '#f43f5e', border: 'none', borderRadius: 6, padding: '0.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 32, height: 32 }}>
+                        <IconDelete />
+                      </button>
+                      <button onClick={() => handlePredecir(p)} disabled={loading} title="Predecir riesgo"
+                        style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'none', borderRadius: 6, padding: '0.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 32, height: 32 }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V6M5 12l7-7 7 7"/></svg>
+                      </button>
+                      <button onClick={() => handleEnviarEmail(p)} disabled={loading} title="Enviar email"
+                        style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '0.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 32, height: 32 }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
+                      </button>
+                      <button onClick={() => { setProyectoFinalizar(p); setModalFinalizarOpen(true); }} disabled={loading} title="Finalizar"
+                        style={{ background: 'rgba(139,92,246,0.15)', color: '#8b5cf6', border: 'none', borderRadius: 6, padding: '0.4rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 32, height: 32 }}>
+                        <IconGoal />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

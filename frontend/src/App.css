@@ -676,3 +676,11 @@ td input:focus, td select:focus {
   color: var(--text-secondary);
   border-bottom-color: var(--border-color);
 }
+[data-theme="light"] .modal-editar-proyecto-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+[data-theme="light"] .modal-editar-proyecto {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--border-color);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
