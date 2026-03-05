@@ -9,7 +9,7 @@ interface ToastProps {
 
 const Toast: React.FC<ToastProps> = ({ message, type = "success", onClose, details }) => {
   React.useEffect(() => {
-    const timer = setTimeout(onClose, 3500);
+    const timer = setTimeout(onClose, 6000);
     return () => clearTimeout(timer);
   }, [onClose]);
 

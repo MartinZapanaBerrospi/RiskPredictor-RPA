@@ -38,8 +38,8 @@ const ReportePDFButton: React.FC<Props> = ({ formData }) => {
   };
 
   return (
-    <button onClick={handleGenerarReporte} style={{marginTop: 16}}>
-      Descargar reporte PDF
+    <button onClick={handleGenerarReporte} type="button">
+      📄 Descargar reporte PDF
     </button>
   );
 };
