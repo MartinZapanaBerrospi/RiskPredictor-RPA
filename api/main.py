@@ -18,7 +18,7 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
 from utils.reporte_profesional import generar_reporte_pdf
-from utils.email_mailhog import enviar_reporte_mailhog
+from utils.email_sender import enviar_reporte_email
 
 load_dotenv()
 
@@ -120,7 +120,8 @@ origins = [
     "http://localhost:5173",  # React Vite Frontend (Desarrollo local)
     "http://localhost:3000",
     "http://127.0.0.1:5173",
-    "https://martinzapanaberrospi.github.io" # Frontend de Producción
+    "https://martinzapanaberrospi.github.io",  # GitHub Pages (legacy)
+    "https://risk-predictor-rpa.vercel.app",   # Frontend Vercel (Producción)
 ]
 
 if frontend_url not in origins:
@@ -434,10 +435,9 @@ def generar_reporte(proyecto: ProyectoInput):
     return FileResponse(pdf_path, media_type='application/pdf', filename='reporte_riesgo.pdf')
 
 @app.post('/enviar-reporte-mailhog')
-def enviar_reporte_mailhog_endpoint(request: EnvioReporteRequest):
-    """Genera el PDF y lo envía por email usando MailHog (localhost:1025)."""
+def enviar_reporte_email_endpoint(request: EnvioReporteRequest):
+    """Genera el PDF y lo envía por email usando Gmail SMTP."""
     prediccion = request.prediccion
-    # Si no hay predicción o le faltan probabilidades, calcularla
     if not prediccion or not prediccion.get('probabilidades') or not isinstance(prediccion.get('probabilidades'), dict) or len(prediccion.get('probabilidades')) == 0:
         if request.proyecto:
             prediccion = _predict_risk(request.proyecto)
@@ -446,14 +446,18 @@ def enviar_reporte_mailhog_endpoint(request: EnvioReporteRequest):
     prediccion_dict = _prediccion_to_report_dict(prediccion or {})
     pdf_path = f"reporte_riesgo_{uuid.uuid4().hex}.pdf"
     generar_reporte_pdf(proyecto_dict, prediccion_dict, filename=pdf_path)
-    asunto = "Reporte de Evaluación de Riesgo"
-    cuerpo = "Adjunto encontrará el reporte PDF generado automáticamente."
-    enviar_reporte_mailhog(request.destinatario, asunto, cuerpo, pdf_path)
+    asunto = "Reporte de Evaluación de Riesgo — RiskPredictor RPA"
+    cuerpo = "Se adjunta el reporte completo de evaluación de riesgos generado por el motor analítico de Inteligencia Artificial."
     try:
-        os.remove(pdf_path)
-    except Exception:
-        pass
-    return {"mensaje": "Reporte enviado correctamente a MailHog"}
+        enviar_reporte_email(request.destinatario, asunto, cuerpo, pdf_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        try:
+            os.remove(pdf_path)
+        except Exception:
+            pass
+    return {"mensaje": "Reporte enviado correctamente al email"}
 
 @app.delete('/proyectos-ejecucion/{proy_id}')
 def delete_proyecto_ejecucion(proy_id: str):
