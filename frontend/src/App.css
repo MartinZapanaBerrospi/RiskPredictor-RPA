@@ -231,6 +231,10 @@ select:focus {
 }
 select option {
   background: #111827;
+  text-transform: capitalize;
+}
+select, .risk-form input, .risk-form select {
+  text-transform: capitalize;
 }
 select {
   cursor: pointer;
