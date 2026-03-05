@@ -79,3 +79,28 @@ a { color: var(--accent-blue); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 ::placeholder { color: var(--text-muted); opacity: 1; }
+
+/* ========== LIGHT THEME ========== */
+[data-theme="light"] {
+  --bg-primary: #f0f4f8;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-input: rgba(241, 245, 249, 0.9);
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-color: rgba(148, 163, 184, 0.3);
+  --shadow-card: 0 10px 40px rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  background-image:
+    linear-gradient(rgba(59, 130, 246, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.06) 1px, transparent 1px);
+}
+[data-theme="light"] body::before {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08), transparent 60%);
+}
+[data-theme="light"] body::after {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.05), transparent 60%);
+}
