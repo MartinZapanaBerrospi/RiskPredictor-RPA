@@ -47,7 +47,7 @@ function ThemeToggle() {
 function App() {
   const [form, setForm] = useState<any>(initialState);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+
   const [opciones, setOpciones] = useState<Opciones>({ tipo_proyecto: [], tecnologias: [], metodologia: [] });
   const [view, setView] = useState<'form' | 'proyectos'>('form');
   const [modalRiesgoOpen, setModalRiesgoOpen] = useState(false);
@@ -77,11 +77,10 @@ function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.tecnologias || form.tecnologias.length === 0) {
-      setError('Debes seleccionar al menos una tecnología.');
+      setToast({ message: 'Debes seleccionar al menos una tecnología.', type: 'error' });
       return;
     }
     setLoading(true);
-    setError('');
     setResultadoRiesgo(null);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/predict`, {
@@ -103,7 +102,7 @@ function App() {
       setFormPrediccion(form);
       setModalRiesgoOpen(true);
     } catch (err: any) {
-      setError(err.message || 'Error desconocido');
+      setToast({ message: err.message || 'Error desconocido', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -233,7 +232,7 @@ function App() {
         </div>
       </form>
       
-      {error && <div className="error-banner">{error}</div>}
+
       <ModalResultadoRiesgoPrincipal
         open={modalRiesgoOpen}
         onClose={() => setModalRiesgoOpen(false)}
