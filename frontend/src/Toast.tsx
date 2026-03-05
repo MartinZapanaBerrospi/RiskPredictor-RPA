@@ -20,7 +20,7 @@ const Toast: React.FC<ToastProps> = ({ message, type = "success", onClose, detai
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        zIndex: 9999,
+        zIndex: 99999,
         background: type === "success" ? "#005fa3" : "#e74c3c",
         color: "white",
         padding: details ? "22px 38px 18px 38px" : "18px 36px",
