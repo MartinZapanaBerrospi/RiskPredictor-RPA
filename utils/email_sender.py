@@ -6,23 +6,18 @@ from email.mime.application import MIMEApplication
 
 def enviar_reporte_email(destinatario: str, asunto: str, cuerpo: str, ruta_pdf: str):
     """
-    Envía un reporte por email usando Gmail SMTP.
-    Requiere las variables de entorno:
-      - SMTP_EMAIL: tu dirección de Gmail
-      - SMTP_PASSWORD: contraseña de aplicación de Google (NO tu contraseña normal)
+    Envía un reporte por email usando Gmail/Google Workspace SMTP.
     
-    Para obtener la contraseña de aplicación:
-      1. Ve a https://myaccount.google.com/apppasswords
-      2. Crea una nueva contraseña de aplicación para "Correo"
-      3. Copia la contraseña de 16 caracteres
+    Variables de entorno requeridas:
+      - SMTP_EMAIL: tu dirección (Gmail o Google Workspace, ej: user@uni.pe)
+      - SMTP_PASSWORD: contraseña de aplicación de 16 caracteres
     """
-    smtp_email = os.getenv("SMTP_EMAIL")
-    smtp_password = os.getenv("SMTP_PASSWORD")
+    smtp_email = os.getenv("SMTP_EMAIL", "").strip()
+    smtp_password = os.getenv("SMTP_PASSWORD", "").strip()
     
     if not smtp_email or not smtp_password:
         raise Exception(
-            "Las variables SMTP_EMAIL y SMTP_PASSWORD no están configuradas. "
-            "Configúralas en el panel de Render con tu Gmail y contraseña de aplicación."
+            "Las variables SMTP_EMAIL y SMTP_PASSWORD no están configuradas en Render."
         )
     
     msg = MIMEMultipart()
@@ -44,7 +39,7 @@ def enviar_reporte_email(destinatario: str, asunto: str, cuerpo: str, ruta_pdf: 
             </p>
         </div>
         <p style="color: #94a3b8; font-size: 11px; text-align: center; margin-top: 15px;">
-            Este correo fue enviado automáticamente por RiskPredictor RPA. No responda a este mensaje.
+            Este correo fue enviado automáticamente por RiskPredictor RPA.
         </p>
     </div>
     """
@@ -57,7 +52,36 @@ def enviar_reporte_email(destinatario: str, asunto: str, cuerpo: str, ruta_pdf: 
         part['Content-Disposition'] = 'attachment; filename="reporte_riesgo.pdf"'
         msg.attach(part)
 
-    # Enviar vía Gmail SMTP
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(smtp_email, smtp_password)
-        server.send_message(msg)
+    # Intentar con STARTTLS en puerto 587 (más compatible con Google Workspace)
+    # Si falla, intentar SSL directo en puerto 465
+    last_error = None
+    
+    for method in ["starttls", "ssl"]:
+        try:
+            if method == "starttls":
+                server = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+            else:
+                server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15)
+            
+            server.login(smtp_email, smtp_password)
+            server.send_message(msg)
+            server.quit()
+            return  # Éxito
+        except Exception as e:
+            last_error = e
+            try:
+                server.quit()
+            except Exception:
+                pass
+            continue
+
+    raise Exception(
+        f"No se pudo enviar el email. "
+        f"Verifica que SMTP_EMAIL y SMTP_PASSWORD sean correctos. "
+        f"Si usas un correo universitario (@uni.pe), asegúrate de que sea Google Workspace "
+        f"y de haber generado la contraseña de aplicación desde tu cuenta. "
+        f"Error: {last_error}"
+    )
