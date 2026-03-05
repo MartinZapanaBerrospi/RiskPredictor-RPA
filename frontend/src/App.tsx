@@ -53,7 +53,6 @@ function App() {
   const [modalRiesgoOpen, setModalRiesgoOpen] = useState(false);
   const [resultadoRiesgo, setResultadoRiesgo] = useState<any>(null);
   const [formPrediccion, setFormPrediccion] = useState<any>(null);
-  const [puedeGuardar, setPuedeGuardar] = useState(false);
   const [retrainStatus, setRetrainStatus] = useState('');
   const [toast, setToast] = useState<{message: string, type?: 'success'|'error'}|null>(null);
 
@@ -100,7 +99,6 @@ function App() {
       setResultadoRiesgo(data);
       setFormPrediccion(form);
       setModalRiesgoOpen(true);
-      setPuedeGuardar(true);
     } catch (err: any) {
       setError(err.message || 'Error desconocido');
     } finally {
@@ -108,37 +106,8 @@ function App() {
     }
   };
 
-  // Nuevo: Guardar proyecto en ejecución
-  const handleGuardarProyecto = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/proyectos-ejecucion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          tecnologias: form.tecnologias.join(','),
-          duracion_estimacion: Number(form.duracion_estimacion),
-          presupuesto_estimado: Number(form.presupuesto_estimado),
-          numero_recursos: Number(form.numero_recursos),
-          experiencia_equipo: Number(form.experiencia_equipo),
-          hitos_clave: Number(form.hitos_clave),
-        }),
-      });
-      if (!response.ok) throw new Error('Error al guardar el proyecto');
-      setToast({ message: 'Proyecto guardado en ejecución correctamente', type: 'success' });
-      setForm(initialState);
-      setPuedeGuardar(false);
-    } catch (err: any) {
-      setToast({ message: err.message || 'Error desconocido', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
   const handleLimpiarCampos = () => {
     setForm(initialState);
-    setPuedeGuardar(false);
     setResultadoRiesgo(null);
     setFormPrediccion(null);
   };
@@ -170,10 +139,38 @@ function App() {
   }
 
   return (
-    <div className="container">
-      <ThemeToggle />
-      <h1>Predicción de Riesgos en Proyectos TI</h1>
-      <form onSubmit={handleSubmit} className="risk-form">
+    <>
+      {/* Top Navbar / Utility Bar minimalista */}
+      <nav className="glass-navbar">
+        <div className="navbar-logo">
+          <strong>RiskPredictor</strong> RPA
+        </div>
+        <div className="navbar-actions">
+          <button onClick={() => setView('proyectos')} className="btn-ghost">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span className="hide-mobile">Ver Proyectos</span>
+          </button>
+          <button onClick={handleRetrain} className="btn-ghost">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.44l5.36-1.55"/></svg>
+            <span className="hide-mobile">Reentrenar Modelo</span>
+          </button>
+          <ThemeToggle />
+        </div>
+      </nav>
+
+      <main className="container main-content-wrapper">
+        <div className="header-titles">
+          <h1>Motor Analítico de Riesgos</h1>
+          <p className="subtitle">Configura los parámetros del proyecto TI para generar una predicción impulsada por Inteligencia Artificial (XGBoost).</p>
+        </div>
+        
+        {retrainStatus && (
+          <div className={`status-banner ${retrainStatus.includes('Error') ? 'error' : 'success'}`}>
+             {retrainStatus}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="risk-form">
         <div className="form-group">
           <label>Tipo de Proyecto:
             <select name="tipo_proyecto" value={form.tipo_proyecto} onChange={handleChange} required>
@@ -245,48 +242,22 @@ function App() {
             <input name="hitos_clave" type="number" min="1" value={form.hitos_clave} onChange={handleChange} required />
           </label>
         </div>
-        <div className="buttons-row">
-          <button type="submit" disabled={loading}>{loading ? 'Prediciendo...' : 'Predecir Riesgo'}</button>
-          <button
-            type="button"
-            onClick={handleGuardarProyecto}
-            disabled={loading || !puedeGuardar}
-            style={{marginLeft: 0, opacity: !puedeGuardar ? 0.5 : 1, pointerEvents: !puedeGuardar ? 'none' : 'auto'}}
-            title={!puedeGuardar ? 'Primero realice una predicción' : 'Guardar en Ejecución'}
-          >
-            Guardar en Ejecución
+        <div className="buttons-row main-actions">
+          <button type="button" onClick={handleLimpiarCampos} disabled={loading} className="btn-secondary" title="Limpiar formulario">
+            Limpiar Datos
           </button>
-          <button
-            type="button"
-            onClick={handleLimpiarCampos}
-            disabled={loading}
-            style={{marginLeft: 0}}
-            title="Limpiar campos"
-          >
-            Limpiar
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? (
+              <span className="flex-center gap-2">
+                <div className="mini-spinner"></div>
+                Procesando...
+              </span>
+            ) : 'Generar Predicción'}
           </button>
         </div>
       </form>
-      <button onClick={() => setView('proyectos')} style={{marginTop: 20, marginRight: 10}}>
-        Ver Proyectos en Ejecución
-      </button>
-      <button onClick={handleRetrain} style={{marginTop: 20, marginLeft: 10}}>
-        Reentrenar modelo
-      </button>
-      {retrainStatus && (
-        <span style={{marginLeft: 10, color: retrainStatus.includes('completado') ? '#007a3d' : retrainStatus.includes('Error') ? '#b00020' : '#005fa3', fontWeight: 600, fontSize: '1.08em'}}>
-          {retrainStatus}
-        </span>
-      )}
-      {/* Si el reentrenamiento fue exitoso, muestra un mensaje adicional */}
-      {retrainStatus === '¡Reentrenamiento completado!' && (
-        <div style={{marginTop: 12, color: '#005fa3', background: '#eaf3fb', borderRadius: 8, padding: '0.7em 1.2em', fontWeight: 500, boxShadow: '0 1px 6px #005fa322'}}>
-          El modelo ha sido actualizado con los nuevos datos.<br />
-          Las próximas predicciones usarán el modelo mejorado.<br />
-          <span style={{fontSize: '0.97em', color: '#222'}}>Puedes continuar usando el sistema normalmente.</span>
-        </div>
-      )}
-      {error && <div className="error">{error}</div>}
+      
+      {error && <div className="error-banner">{error}</div>}
       <ModalResultadoRiesgoPrincipal
         open={modalRiesgoOpen}
         onClose={() => setModalRiesgoOpen(false)}
@@ -294,7 +265,8 @@ function App() {
         proyecto={formPrediccion}
       />
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-    </div>
+      </main>
+    </>
   );
 }
 
