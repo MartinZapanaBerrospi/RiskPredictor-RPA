@@ -13,6 +13,21 @@
   -moz-osx-font-smoothing: grayscale;
 
   scroll-behavior: smooth;
+
+  /* Variables Premium V2 */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: rgba(17, 24, 39, 0.7);
+  --bg-input: rgba(10, 14, 26, 0.6);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
+  --border-color: rgba(148, 163, 184, 0.2);
+  --radius-lg: 16px;
 }
 
 a {
@@ -109,6 +124,36 @@ input, select, button {
 @media (max-width: 700px) {
   body {
     font-size: 0.98em;
+  }
+}
+
+@media (min-width: 768px) {
+  body {
+    background-image:
+      linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  [data-theme="dark"] body {
+    background-image:
+      linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+  }
+
+  /* Radial glow for dark mode */
+  [data-theme="dark"] body::before {
+    content: '';
+    position: fixed;
+    top: -20%;
+    right: -10%;
+    width: 50vw;
+    height: 50vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.15), transparent 60%);
+    z-index: -1;
+    filter: blur(60px);
+    pointer-events: none;
   }
 }
 
