@@ -1,30 +1,44 @@
-import smtplib
+"""
+Envío de emails usando Brevo (ex-Sendinblue) HTTP API.
+No requiere SMTP — funciona en cualquier servidor incluido Render.
+
+Pasos para configurar:
+  1. Crear cuenta gratuita en https://www.brevo.com/
+  2. Ir a Settings → SMTP & API → API Keys → Generate a new API key
+  3. Agregar la variable BREVO_API_KEY en Render
+  4. (La primera vez) Verificar el email remitente en Brevo → Settings → Senders → Add a sender
+"""
+
 import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
+import json
+import base64
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
+
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 def enviar_reporte_email(destinatario: str, asunto: str, cuerpo: str, ruta_pdf: str):
-    """
-    Envía un reporte por email usando Gmail SMTP.
-    """
-    smtp_email = os.getenv("SMTP_EMAIL", "").strip()
-    smtp_password = os.getenv("SMTP_PASSWORD", "").strip().replace(" ", "")
+    """Envía un reporte con PDF adjunto usando Brevo HTTP API."""
     
-    print(f"[EMAIL] Intentando enviar a: {destinatario}")
-    print(f"[EMAIL] Usando remitente: {smtp_email}")
-    print(f"[EMAIL] Password length: {len(smtp_password)} chars")
+    api_key = os.getenv("BREVO_API_KEY", "").strip()
+    sender_email = os.getenv("SMTP_EMAIL", "").strip()
     
-    if not smtp_email or not smtp_password:
+    if not api_key:
         raise Exception(
-            "Las variables SMTP_EMAIL y SMTP_PASSWORD no están configuradas en Render."
+            "La variable BREVO_API_KEY no está configurada. "
+            "Crea una cuenta gratuita en brevo.com y agrega tu API key en Render."
+        )
+    if not sender_email:
+        raise Exception(
+            "La variable SMTP_EMAIL no está configurada. "
+            "Agrega tu email remitente (el mismo verificado en Brevo) en Render."
         )
     
-    msg = MIMEMultipart()
-    msg['From'] = f"RiskPredictor RPA <{smtp_email}>"
-    msg['To'] = destinatario
-    msg['Subject'] = asunto
-
+    # Leer PDF y convertir a base64
+    with open(ruta_pdf, "rb") as f:
+        pdf_content = base64.b64encode(f.read()).decode("utf-8")
+    
+    # Cuerpo HTML profesional
     html_body = f"""
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 20px; border-radius: 12px 12px 0 0;">
@@ -40,55 +54,42 @@ def enviar_reporte_email(destinatario: str, asunto: str, cuerpo: str, ruta_pdf: 
     </div>
     """
     
-    msg.attach(MIMEText(html_body, 'html'))
-
-    with open(ruta_pdf, "rb") as f:
-        part = MIMEApplication(f.read(), Name="reporte_riesgo.pdf")
-        part['Content-Disposition'] = 'attachment; filename="reporte_riesgo.pdf"'
-        msg.attach(part)
-
-    errors = []
+    payload = {
+        "sender": {
+            "name": "RiskPredictor RPA",
+            "email": sender_email
+        },
+        "to": [
+            {"email": destinatario}
+        ],
+        "subject": asunto,
+        "htmlContent": html_body,
+        "attachment": [
+            {
+                "content": pdf_content,
+                "name": "reporte_riesgo.pdf"
+            }
+        ]
+    }
     
-    # Intento 1: STARTTLS puerto 587
-    server = None
+    data = json.dumps(payload).encode("utf-8")
+    
+    req = Request(BREVO_API_URL, data=data, method="POST")
+    req.add_header("accept", "application/json")
+    req.add_header("content-type", "application/json")
+    req.add_header("api-key", api_key)
+    
     try:
-        print("[EMAIL] Intentando STARTTLS puerto 587...")
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(smtp_email, smtp_password)
-        server.send_message(msg)
-        server.quit()
-        print("[EMAIL] Enviado exitosamente via STARTTLS 587")
-        return
+        print(f"[EMAIL] Enviando a {destinatario} via Brevo API...")
+        response = urlopen(req, timeout=15)
+        result = json.loads(response.read().decode("utf-8"))
+        print(f"[EMAIL] Enviado exitosamente. MessageId: {result.get('messageId', 'N/A')}")
+    except HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        print(f"[EMAIL] Error Brevo: {e.code} - {error_body}")
+        raise Exception(
+            f"Error enviando email via Brevo (HTTP {e.code}): {error_body}"
+        )
     except Exception as e:
-        errors.append(f"STARTTLS:587 -> {type(e).__name__}: {e}")
-        print(f"[EMAIL] STARTTLS fallo: {e}")
-        try:
-            if server: server.quit()
-        except Exception:
-            pass
-
-    # Intento 2: SSL directo puerto 465
-    server = None
-    try:
-        print("[EMAIL] Intentando SSL puerto 465...")
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15)
-        server.login(smtp_email, smtp_password)
-        server.send_message(msg)
-        server.quit()
-        print("[EMAIL] Enviado exitosamente via SSL 465")
-        return
-    except Exception as e:
-        errors.append(f"SSL:465 -> {type(e).__name__}: {e}")
-        print(f"[EMAIL] SSL fallo: {e}")
-        try:
-            if server: server.quit()
-        except Exception:
-            pass
-
-    error_detail = " | ".join(errors)
-    raise Exception(
-        f"No se pudo enviar el email. {error_detail}"
-    )
+        print(f"[EMAIL] Error inesperado: {e}")
+        raise Exception(f"Error enviando email: {e}")
