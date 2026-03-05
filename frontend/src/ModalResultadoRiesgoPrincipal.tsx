@@ -70,7 +70,7 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
         const data = await response.json().catch(() => ({}));
         throw new Error(data.detail || 'No se pudo enviar el email. Verifica la configuración SMTP en Render.');
       }
-      setToast({ message: '✅ Reporte enviado exitosamente', type: 'success' });
+      setToast({ message: 'Reporte enviado exitosamente', type: 'success' });
       setModalEmailOpen(false);
     } catch (e: any) {
       setToast({ message: e.message || 'Error al enviar email', type: 'error' });
