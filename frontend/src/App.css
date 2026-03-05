@@ -479,6 +479,200 @@ button:disabled {
   margin: 1rem 0; 
 }
 
+/* === Modal Resultado Premium === */
+.modal-resultado-premium {
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 480px;
+  animation: modalSlide 0.3s ease-out;
+}
+.modal-resultado-header {
+  background: linear-gradient(135deg, #3b82f6, #7c3aed);
+  padding: 1.2rem 1.5rem;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-resultado-header h3 {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+.modal-resultado-header p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  margin: 2px 0 0 0;
+}
+.modal-close-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  padding: 0;
+  min-width: unset;
+  transition: background 0.2s;
+}
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+.modal-resultado-body {
+  padding: 1.5rem;
+}
+
+/* Risk Badge */
+.risk-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px solid;
+  border-radius: 100px;
+  padding: 0.6rem 1.5rem;
+  font-weight: 800;
+  font-size: 1.15rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Probability Section */
+.prob-section {
+  margin-bottom: 1.5rem;
+}
+.prob-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 0.8rem;
+}
+.prob-row {
+  margin-bottom: 0.7rem;
+}
+.prob-row-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  margin-bottom: 0.25rem;
+}
+.prob-name {
+  color: #e2e8f0;
+  text-transform: capitalize;
+  font-weight: 500;
+}
+.prob-value {
+  font-weight: 700;
+  font-family: "Inter", monospace;
+}
+.prob-bar-track {
+  background: rgba(255, 255, 255, 0.08);
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.prob-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s ease-out;
+}
+
+/* Metric Cards */
+.metric-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.metric-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.metric-label {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.metric-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-family: "Inter", monospace;
+}
+
+/* Action Buttons */
+.modal-resultado-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+.modal-resultado-actions button {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.btn-email {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+}
+.btn-email:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* === LIGHT THEME — Modal Resultado === */
+[data-theme="light"] .modal-resultado-premium {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.12);
+}
+[data-theme="light"] .prob-name {
+  color: #1e293b;
+}
+[data-theme="light"] .prob-bar-track {
+  background: #e2e8f0;
+}
+[data-theme="light"] .metric-card {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+[data-theme="light"] .btn-email {
+  border-color: #d1d5db;
+  color: #374151;
+}
+[data-theme="light"] .btn-email:hover {
+  background: #f3f4f6;
+}
+
 /* === Volver Button === */
 .btn-volver {
   display: flex;

@@ -19,22 +19,22 @@ interface ModalResultadoRiesgoProps {
 
 function getRiskColor(level: string): string {
   const l = level.toLowerCase();
-  if (l === 'alto') return '#f43f5e';
+  if (l === 'alto') return '#ef4444';
   if (l === 'medio') return '#f59e0b';
-  return '#10b981';
+  return '#22c55e';
 }
 
-function getRiskBg(level: string): string {
+function getRiskIcon(level: string): string {
   const l = level.toLowerCase();
-  if (l === 'alto') return 'rgba(244, 63, 94, 0.12)';
-  if (l === 'medio') return 'rgba(245, 158, 11, 0.12)';
-  return 'rgba(16, 185, 129, 0.12)';
+  if (l === 'alto') return '🔴';
+  if (l === 'medio') return '🟡';
+  return '🟢';
 }
 
 function getBarColor(value: number): string {
-  if (value > 0.6) return '#f43f5e';
+  if (value > 0.6) return '#ef4444';
   if (value > 0.3) return '#f59e0b';
-  return '#10b981';
+  return '#22c55e';
 }
 
 const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClose, resultado, proyecto }) => {
@@ -66,9 +66,9 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.detail || 'No se pudo enviar el email');
+        throw new Error(data.detail || 'No se pudo enviar el email. Verifica la configuración SMTP en Render.');
       }
-      setToast({ message: 'Reporte enviado exitosamente', type: 'success' });
+      setToast({ message: '✅ Reporte enviado exitosamente', type: 'success' });
       setModalEmailOpen(false);
     } catch (e: any) {
       setToast({ message: e.message || 'Error al enviar email', type: 'error' });
@@ -80,164 +80,82 @@ const ModalResultadoRiesgo: React.FC<ModalResultadoRiesgoProps> = ({ open, onClo
   if (!open || !resultado) return null;
 
   const riskColor = getRiskColor(resultado.riesgo_general);
-  const riskBg = getRiskBg(resultado.riesgo_general);
+  const riskIcon = getRiskIcon(resultado.riesgo_general);
 
   return (
     <>
       <div className="modal-editar-proyecto-overlay">
-        <div className="modal-editar-proyecto" style={{ maxWidth: 520, padding: 0 }}>
+        <div className="modal-resultado-premium">
           
-          {/* Header con gradiente */}
-          <div style={{
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            padding: '1.5rem 2rem',
-            borderRadius: '16px 16px 0 0',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
+          {/* Header */}
+          <div className="modal-resultado-header">
             <div>
-              <h3 style={{ color: 'white', margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>
-                Resultado de Predicción
-              </h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', margin: '4px 0 0', fontSize: '0.85rem' }}>
-                Motor Analítico de Riesgos — XGBoost
-              </p>
+              <h3>Resultado de Predicción</h3>
+              <p>Motor Analítico — XGBoost</p>
             </div>
-            <button onClick={onClose} style={{
-              background: 'rgba(255,255,255,0.15)',
-              border: 'none',
-              color: 'white',
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              cursor: 'pointer',
-              fontSize: '1.1rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 0,
-              minWidth: 'unset',
-            }}>✕</button>
+            <button className="modal-close-btn" onClick={onClose}>✕</button>
           </div>
 
           {/* Body */}
-          <div style={{ padding: '1.5rem 2rem' }}>
+          <div className="modal-resultado-body">
             
             {/* Risk Badge */}
-            <div style={{
-              background: riskBg,
+            <div className="risk-badge" style={{ 
+              borderColor: riskColor,
               color: riskColor,
-              border: `1px solid ${riskColor}30`,
-              borderRadius: '100px',
-              padding: '0.6rem 1.5rem',
-              fontWeight: 800,
-              fontSize: '1.3rem',
-              textAlign: 'center',
-              marginBottom: '1.5rem',
-              textTransform: 'uppercase' as const,
-              letterSpacing: '0.05em',
             }}>
+              <span style={{ fontSize: '1.4rem' }}>{riskIcon}</span>
               Riesgo {resultado.riesgo_general}
             </div>
 
-            {/* Probabilidades de Riesgo */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                color: 'var(--text-muted)',
-                textTransform: 'uppercase' as const,
-                letterSpacing: '0.5px',
-                marginBottom: '0.8rem',
-              }}>Distribución de Probabilidades</p>
-              
-              {Object.entries(resultado.probabilidades_riesgo).map(([key, value]) => (
-                <div key={key} style={{ marginBottom: '0.8rem' }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: '0.9rem',
-                    marginBottom: '0.3rem',
-                    fontFamily: '"Inter", monospace',
-                  }}>
-                    <span style={{ color: 'var(--text-primary)', textTransform: 'capitalize' as const }}>{key}</span>
-                    <span style={{ color: getBarColor(value), fontWeight: 700 }}>{(value * 100).toFixed(1)}%</span>
+            {/* Probabilidades */}
+            <div className="prob-section">
+              <p className="prob-label">Distribución de Probabilidades</p>
+              {Object.entries(resultado.probabilidades_riesgo).map(([key, value]) => {
+                const pct = (value * 100).toFixed(1);
+                const barColor = getBarColor(value);
+                return (
+                  <div key={key} className="prob-row">
+                    <div className="prob-row-header">
+                      <span className="prob-name">{key}</span>
+                      <span className="prob-value" style={{ color: barColor }}>{pct}%</span>
+                    </div>
+                    <div className="prob-bar-track">
+                      <div className="prob-bar-fill" style={{
+                        width: `${Math.max(Number(pct), 2)}%`,
+                        background: barColor,
+                      }} />
+                    </div>
                   </div>
-                  <div style={{
-                    background: 'var(--border-color)',
-                    height: 8,
-                    borderRadius: 4,
-                    overflow: 'hidden',
-                  }}>
-                    <div style={{
-                      height: '100%',
-                      borderRadius: 4,
-                      background: getBarColor(value),
-                      width: `${Math.max(value * 100, 2)}%`,
-                      transition: 'width 1s ease-out',
-                    }} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Sobrecosto y Retraso */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '1rem',
-              marginBottom: '1.5rem',
-            }}>
-              <div style={{
-                background: 'rgba(244, 63, 94, 0.08)',
-                border: '1px solid rgba(244, 63, 94, 0.2)',
-                borderRadius: 12,
-                padding: '1rem',
-                textAlign: 'center',
-              }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' as const, margin: '0 0 4px' }}>Sobrecosto</p>
-                <p style={{ color: getBarColor(resultado.probabilidad_sobrecosto), fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>
+            {/* Metric Cards */}
+            <div className="metric-cards">
+              <div className="metric-card metric-card-rose">
+                <span className="metric-label">Sobrecosto</span>
+                <span className="metric-value" style={{ color: getBarColor(resultado.probabilidad_sobrecosto) }}>
                   {(resultado.probabilidad_sobrecosto * 100).toFixed(1)}%
-                </p>
+                </span>
               </div>
-              <div style={{
-                background: 'rgba(245, 158, 11, 0.08)',
-                border: '1px solid rgba(245, 158, 11, 0.2)',
-                borderRadius: 12,
-                padding: '1rem',
-                textAlign: 'center',
-              }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' as const, margin: '0 0 4px' }}>Retraso</p>
-                <p style={{ color: getBarColor(resultado.probabilidad_retraso), fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>
+              <div className="metric-card metric-card-amber">
+                <span className="metric-label">Retraso</span>
+                <span className="metric-value" style={{ color: getBarColor(resultado.probabilidad_retraso) }}>
                   {(resultado.probabilidad_retraso * 100).toFixed(1)}%
-                </p>
+                </span>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {/* Actions */}
+            <div className="modal-resultado-actions">
               <ReportePDFButton formData={{
                 ...proyecto,
                 tecnologias: Array.isArray(proyecto.tecnologias)
                   ? proyecto.tecnologias
                   : (typeof proyecto.tecnologias === 'string' ? proyecto.tecnologias.split(',').map((t: string) => t.trim()) : []),
               }} />
-              <button
-                type="button"
-                onClick={() => setModalEmailOpen(true)}
-                style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-primary)',
-                  padding: '0.7rem 1rem',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                }}
-              >
+              <button type="button" className="btn-email" onClick={() => setModalEmailOpen(true)}>
                 📧 Enviar por Email
               </button>
             </div>
