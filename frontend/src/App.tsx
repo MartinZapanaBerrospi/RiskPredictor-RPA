@@ -76,6 +76,10 @@ function App() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.tecnologias || form.tecnologias.length === 0) {
+      setError('Debes seleccionar al menos una tecnología.');
+      return;
+    }
     setLoading(true);
     setError('');
     setResultadoRiesgo(null);
